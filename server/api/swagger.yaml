@@ -1,0 +1,271 @@
+---
+swagger: "2.0"
+info:
+  description: "This are the APIs for the ToDo Manager exercise of the first lab of\
+    \ DSP course 2021/22"
+  version: "1.0"
+  title: "ToDo Manager APIs"
+basePath: "/api"
+tags:
+- name: "tasks"
+  description: "Operation on tasks"
+- name: "users"
+  description: "Operation on users"
+schemes:
+- "http"
+paths:
+  /tasks/:
+    get:
+      tags:
+      - "tasks"
+      summary: "Get list of tasks assigned or created"
+      description: ""
+      operationId: "getTasks"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Task"
+        "401":
+          description: "Not authorized to get the tasks"
+      x-swagger-router-controller: "Tasks"
+    post:
+      tags:
+      - "tasks"
+      summary: "Create new task"
+      description: ""
+      operationId: "createTask"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Task that is going to be created"
+        required: true
+        schema:
+          $ref: "#/definitions/Task"
+      responses:
+        "201":
+          description: "Created"
+        "400":
+          description: "Bad request"
+        "401":
+          description: "Not authorized to update task"
+      x-swagger-router-controller: "Tasks"
+    put:
+      tags:
+      - "tasks"
+      summary: "Update an existing task"
+      description: ""
+      operationId: "updateTask"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/jspn"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Task object that need to be updated"
+        required: true
+        schema:
+          $ref: "#/definitions/Task"
+      deprecated: false
+      responses:
+        "200":
+          description: "Successfully updated"
+        "401":
+          description: "Not authorized to update task"
+        "404":
+          description: "Task not found"
+      x-swagger-router-controller: "Tasks"
+  /tasks/{id}:
+    get:
+      tags:
+      - "tasks"
+      summary: "Get task by id"
+      operationId: "getTaskById"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "Id values that is used to get the specific task"
+        required: true
+        type: "number"
+      responses:
+        "200":
+          description: "Successfull operation"
+          schema:
+            $ref: "#/definitions/Task"
+        "401":
+          description: "Not authorized to update task"
+        "404":
+          description: "Nof found"
+      x-swagger-router-controller: "Tasks"
+    delete:
+      tags:
+      - "tasks"
+      summary: "Delete task by id"
+      operationId: "deleteTaskById"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "Id of task to delete"
+        required: true
+        type: "number"
+      responses:
+        "200":
+          description: "Successfully deleted"
+        "401":
+          description: "Not authorized to delete the task"
+        "404":
+          description: "Task not found"
+      x-swagger-router-controller: "Tasks"
+  /tasks/public:
+    get:
+      tags:
+      - "tasks"
+      summary: "Get all public tasks"
+      operationId: "getPublicTasks"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "Successfull operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Task"
+        "404":
+          description: "Not found"
+      x-swagger-router-controller: "Tasks"
+  /login:
+    post:
+      tags:
+      - "users"
+      summary: "Login user"
+      operationId: "loginUser"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "Successful operation"
+        "400":
+          description: "Invalid username or password"
+      x-swagger-router-controller: "Users"
+  /logout:
+    delete:
+      tags:
+      - "users"
+      summary: "Logout user"
+      operationId: "logoutUser"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "Successful operation"
+      x-swagger-router-controller: "Users"
+  /current:
+    get:
+      tags:
+      - "users"
+      summary: "Get current logged user"
+      operationId: "getCurrentUser"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/User"
+      x-swagger-router-controller: "Users"
+definitions:
+  User:
+    type: "object"
+    required:
+    - "email"
+    - "id"
+    - "password"
+    properties:
+      id:
+        type: "number"
+        description: "Unique identifier of the user in ToDo Manager service"
+      name:
+        type: "string"
+        description: "Username"
+      email:
+        type: "string"
+        format: "email"
+        description: "Email for the user"
+      password:
+        type: "string"
+        description: "User password used to authenticate to the system"
+        minLength: 6
+        maxLength: 20
+    example:
+      password: "password"
+      name: "name"
+      id: 0.80082819046101150206595775671303272247314453125
+      email: "email"
+  Task:
+    type: "object"
+    required:
+    - "description"
+    - "id"
+    properties:
+      id:
+        type: "number"
+        description: "Unique identifier of the task in the ToDo Manager service"
+      description:
+        type: "string"
+        description: "Textual description of the task"
+        maxLength: 160
+      important:
+        type: "boolean"
+        default: false
+      private:
+        type: "boolean"
+        default: true
+      projects:
+        type: "array"
+        items:
+          type: "string"
+          enum:
+          - "WA1_Project"
+          - "WA2_Project"
+          - "DSP_Project"
+      deadline:
+        type: "string"
+        format: "date"
+      completed:
+        type: "boolean"
+        default: false
+      owner:
+        $ref: "#/definitions/User/properties/id"
+      assignedTo:
+        $ref: "#/definitions/User/properties/id"
+    example:
+      important: false
+      owner: ""
+      private: true
+      projects:
+      - "WA1_Project"
+      - "WA1_Project"
+      description: "description"
+      id: 0.80082819046101150206595775671303272247314453125
+      completed: false
+      deadline: "2000-01-23"
+      assignedTo: ""

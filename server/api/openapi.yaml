@@ -1,0 +1,450 @@
+openapi: 3.0.1
+info:
+  title: ToDo Manager APIs
+  description: This are the APIs for the ToDo Manager exercise of the first lab of
+    DSP course 2021/22
+  version: "1.0"
+servers:
+- url: /api
+tags:
+- name: tasks
+  description: Operation on tasks
+- name: users
+  description: Operation on users
+paths:
+  /tasks/:
+    get:
+      tags:
+      - tasks
+      summary: Get list of tasks assigned or created
+      description: Get list of tasks assigned or created
+      operationId: getTasks
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tasks'
+        "401":
+          description: Not authorized to get the tasks
+          content: {}
+      x-swagger-router-controller: Tasks
+    post:
+      tags:
+      - tasks
+      summary: Create new task
+      description: Create new task
+      operationId: createTask
+      requestBody:
+        description: Task that is going to be created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+        required: true
+      responses:
+        "201":
+          description: Created
+          content: {}
+        "400":
+          description: Bad request
+          content: {}
+        "401":
+          description: Not authorized to update task
+          content: {}
+      x-codegen-request-body-name: body
+      x-swagger-router-controller: Tasks
+  /tasks/{id}/assign:
+    get:
+      tags:
+      - tasks
+      summary: Get the assignees of that task
+      description: Get the list of all the assignees of that task
+      operationId: getAssigneeTask
+      parameters:
+      - name: id
+        in: path
+        description: Task id used to assign the get all assignee
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      responses:
+        "200":
+          description: Successfully get the assignees of that task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tasks'
+        "400":
+          description: Bad request
+          content: {}
+        "401":
+          description: 'Not authorized to get the assigned task '
+          content: {}
+        "404":
+          description: Task not found
+          content: {}
+      x-swagger-router-controller: Tasks
+    put:
+      tags:
+      - tasks
+      summary: Mark task as completed by id
+      description: Mark as completed the task
+      operationId: markComplete
+      parameters:
+      - name: id
+        in: path
+        description: Task id used to mark it as completed
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      responses:
+        "200":
+          description: Successfully marked as complete that task task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        "400":
+          description: Bad request
+          content: {}
+        "401":
+          description: 'Not authorized to mark as complete '
+          content: {}
+        "404":
+          description: Task not found
+          content: {}
+      x-swagger-router-controller: Tasks
+    post:
+      tags:
+      - tasks
+      summary: Assigned the task by id
+      description: Assigned the task with specified id
+      operationId: assignTask
+      parameters:
+      - name: username
+        in: query
+        description: The user name to assign the task
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Task is used to assign it to a user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      responses:
+        "200":
+          description: Successfully assigned the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        "400":
+          description: Bad request
+          content: {}
+        "401":
+          description: Not authorized to assign the task
+          content: {}
+        "404":
+          description: Task not found
+          content: {}
+      x-swagger-router-controller: Tasks
+    delete:
+      tags:
+      - tasks
+      summary: 'Remove assignee '
+      description: Remove the assignation of the task
+      operationId: removeAssignee
+      parameters:
+      - name: id
+        in: path
+        description: Task id used to remove the assign
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      responses:
+        "200":
+          description: Successfully removed the assignation of that task
+          content: {}
+        "400":
+          description: Bad request
+          content: {}
+        "401":
+          description: Not authorized to delete the assignee
+          content: {}
+        "404":
+          description: Task not found
+          content: {}
+      x-swagger-router-controller: Tasks
+  /tasks/{id}:
+    get:
+      tags:
+      - tasks
+      summary: Get task by id
+      operationId: getTaskById
+      parameters:
+      - name: id
+        in: path
+        description: Id values that is used to get the specific task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      responses:
+        "200":
+          description: Successfull operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        "401":
+          description: Not authorized to update task
+          content: {}
+        "404":
+          description: Nof found
+          content: {}
+      x-swagger-router-controller: Tasks
+    put:
+      tags:
+      - tasks
+      summary: Update an existing task
+      operationId: updateTask
+      parameters:
+      - name: id
+        in: path
+        description: Id values that is used to get the specific task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      requestBody:
+        description: Task object that need to be updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+        required: true
+      responses:
+        "200":
+          description: Successfully updated
+          content: {}
+        "401":
+          description: Not authorized to update task
+          content: {}
+        "404":
+          description: Task not found
+          content: {}
+      x-codegen-request-body-name: body
+      x-swagger-router-controller: Tasks
+    delete:
+      tags:
+      - tasks
+      summary: Delete task by id
+      operationId: deleteTaskById
+      parameters:
+      - name: id
+        in: path
+        description: Id of task to delete
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      responses:
+        "200":
+          description: Successfully deleted
+          content: {}
+        "401":
+          description: Not authorized to delete the task
+          content: {}
+        "404":
+          description: Task not found
+          content: {}
+      x-swagger-router-controller: Tasks
+  /login:
+    post:
+      tags:
+      - users
+      summary: Login user
+      operationId: loginUser
+      responses:
+        "200":
+          description: Successful operation
+          content: {}
+        "400":
+          description: Invalid username or password
+          content: {}
+      x-swagger-router-controller: Users
+  /logout:
+    delete:
+      tags:
+      - users
+      summary: Logout user
+      operationId: logoutUser
+      responses:
+        "200":
+          description: Successful operation
+          content: {}
+      x-swagger-router-controller: Users
+  /current:
+    get:
+      tags:
+      - users
+      summary: Get current logged user
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      x-swagger-router-controller: Users
+components:
+  schemas:
+    User:
+      required:
+      - email
+      - id
+      - password
+      type: object
+      properties:
+        id:
+          type: number
+          description: Unique identifier of the user in ToDo Manager service
+        name:
+          type: string
+          description: Username
+        email:
+          type: string
+          description: Email for the user
+          format: email
+        password:
+          maxLength: 20
+          minLength: 6
+          type: string
+          description: User password used to authenticate to the system
+        self:
+          type: string
+          format: uri
+      example:
+        password: password
+        name: name
+        self: http://example.com/aeiou
+        id: 0.80082819046101150206595775671303272247314453125
+        email: ""
+    Task:
+      required:
+      - description
+      - id
+      type: object
+      properties:
+        id:
+          type: number
+          description: Unique identifier of the task in the ToDo Manager service
+        description:
+          maxLength: 160
+          type: string
+          description: Textual description of the task
+        important:
+          type: boolean
+          default: false
+        private:
+          type: boolean
+          default: true
+        projects:
+          type: array
+          items:
+            type: string
+            enum:
+            - WA1_Project
+            - WA2_Project
+            - DSP_Project
+        deadline:
+          type: string
+          format: date
+        completed:
+          type: boolean
+          default: false
+        owner:
+          $ref: '#/components/schemas/User/properties/id'
+        assignedTo:
+          $ref: '#/components/schemas/User/properties/id'
+        self:
+          type: string
+          format: uri
+      example:
+        important: false
+        owner: "{}"
+        private: true
+        projects:
+        - WA1_Project
+        - WA1_Project
+        description: description
+        self: http://example.com/aeiou
+        id: 1.46581298050294517310021547018550336360931396484375
+        completed: false
+        deadline: 2000-01-23
+        assignedTo: null
+    Tasks:
+      type: object
+      properties:
+        totalPages:
+          type: number
+        pageNumber:
+          type: number
+        pageItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        next:
+          type: string
+          format: uri
+        self:
+          type: string
+          format: uri
+      example:
+        next: http://example.com/aeiou
+        pageNumber: 6.02745618307040320615897144307382404804229736328125
+        totalPages: 0.80082819046101150206595775671303272247314453125
+        pageItems:
+        - important: false
+          owner: "{}"
+          private: true
+          projects:
+          - WA1_Project
+          - WA1_Project
+          description: description
+          self: http://example.com/aeiou
+          id: 1.46581298050294517310021547018550336360931396484375
+          completed: false
+          deadline: 2000-01-23
+          assignedTo: null
+        - important: false
+          owner: "{}"
+          private: true
+          projects:
+          - WA1_Project
+          - WA1_Project
+          description: description
+          self: http://example.com/aeiou
+          id: 1.46581298050294517310021547018550336360931396484375
+          completed: false
+          deadline: 2000-01-23
+          assignedTo: null
+        self: http://example.com/aeiou
