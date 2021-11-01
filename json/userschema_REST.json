@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "usersSchema",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "Unique identifier of the user in ToDo Manager service",
+            "type": "number"
+        },
+        "name": {
+            "description": "Username",
+            "type": "string"
+        },
+        "email": {
+            "description": "Email for the user",
+            "type": "string",
+            "format": "email"
+        },
+        "password": {
+            "description": "User password used to authenticate to the system",
+            "type": "string",
+            "minLength":6,
+            "maxLength": 20
+        },
+        "self": { "type": "string", "format": "uri"}  
+    },
+    
+    "required": ["id", "email", "password"]
+}

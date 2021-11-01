@@ -1,0 +1,67 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "taskJson",
+    "definitions": {
+        "task": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Unique identifier of the task in the ToDo Manager service",
+                    "type": "number"
+                },
+                "description": {
+                    "description": "Textual description of the task",
+                    "type": "string",
+                    "maxLength": 160
+                },
+                "important": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "private": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["WA1_Project", "WA2_Project", "DSP_Project"]
+                    }
+                },
+                "deadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(20[7-9][0-9]|[2-9][0-9][0-9][0-9])-"
+                   
+                },
+                "completed": {
+                    "type": "boolean",
+                    "default": "false"
+                },
+                "owner": {
+                    "type": "string", "format": "uri"
+                },
+                "assignees": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uri"}
+                }
+        
+            },
+            "required": ["id", "description"]
+        },
+        "tasks": {
+            "type": "object",
+            "properties": {
+                "totalPages": { "type": "integer"},
+                "pageNumber": { "type": "integer"},
+                "pageItems": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/task"}
+                },
+                "next": {"type": "string", "format": "uri"}
+            }
+        }
+    }
+    
+}

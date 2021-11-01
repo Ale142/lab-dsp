@@ -19,6 +19,25 @@ paths:
       summary: Get list of tasks assigned or created
       description: Get list of tasks assigned or created
       operationId: getTasks
+      parameters:
+        - name: private
+          in: query
+          required: false
+          description: Filter task between private or public
+          schema:
+            type: boolean
+        - name: completed
+          in: query
+          required: false
+          description: Filter task between completed or not
+          schema:
+            type: boolean
+        - name: important
+          in: query
+          required: false
+          description: Filter task between important or not
+          schema:
+            type: boolean
       responses:
         200:
           description: Successful operation
@@ -53,12 +72,13 @@ paths:
           description: Not authorized to update task
           content: {}
       x-codegen-request-body-name: body
-  /tasks/{id}/assign:
+
+  /tasks/{id}/assignees:
     get:
       tags:
       - tasks
-      summary: Get the assignees of that task
-      description: Get the list of all the assignees of that task
+      summary: Get the all the assignees of that task
+      description: Get the list of assignees of that task
       operationId: getAssigneeTask
       parameters:
         - name: id
@@ -73,7 +93,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tasks'
+                $ref: '#/components/schemas/User'
         400:
           description: Bad request
           content: {}
@@ -86,8 +106,8 @@ paths:
     put:
       tags:
       - tasks
-      summary: Mark task as completed by id
-      description: Mark as completed the task
+      summary: Mark task as completed
+      description: Mark the task id 
       operationId: markComplete
       parameters:
         - name: id
@@ -112,21 +132,22 @@ paths:
         404:
           description: Task not found
           content: {}
+  /tasks/{tid}/assignees/{uid}:
     post:
       tags:
       - tasks
-      summary: Assigned the task by id
-      description: Assigned the task with specified id
+      summary: Assigned the task to a user
+      description: Assigned the task by id to the user specified by id
       operationId: assignTask
       parameters:
-      - name: username
-        in: query
-        description: The user name to assign the task
+      - name: uid
+        in: path
+        description: The userid to assign the task
         required: true
         schema:
           type: string
           
-      - name: id
+      - name: tid
         in: path
         description: Task is used to assign it to a user
         required: true
@@ -155,9 +176,15 @@ paths:
       description: Remove the assignation of the task
       operationId: removeAssignee
       parameters:
-        - name: id
+        - name: tid
           in: path
-          description: Task id used to remove the assign
+          description: Task id used to remove the assign from it
+          required: true
+          schema:
+            type: number
+        - name: uid
+          in: path
+          description: User id used to remove the assign from him
           required: true
           schema:
             type: number
@@ -350,9 +377,13 @@ components:
           type: boolean
           default: false
         owner:
-          $ref: '#/components/schemas/User/properties/id'
-        assignedTo:
-          $ref: '#/components/schemas/User/properties/id'
+          type: string
+          format: uri
+        assignees:
+          type: array
+          items:
+            type: string
+            format: uri
         self:
           type: string
           format: uri
@@ -373,3 +404,4 @@ components:
         self:
           type: string
           format: uri
+
