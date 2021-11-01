@@ -11,12 +11,14 @@ const serverPort = 8080;
 const options = {
   controllers: path.join(__dirname, './controllers'),
 };
+const express = require('express');
+
 const expressAppConfig = oas3Tools.expressAppConfig(path.join(__dirname, 'api/openapi.yaml'), options);
 const app = expressAppConfig.getApp();
 const taskController = require(path.join(__dirname, 'controllers/Tasks'));
 const userController = require(path.join(__dirname, 'controllers/Users'));
 const userService = require(path.join(__dirname, 'service/UsersService'));
-
+const { check, validationResult } = require('express-validator');
 const passport = require("passport");
 const passportJWT = require("passport-jwt");
 const ExtractJWT = passportJWT.ExtractJwt;
@@ -79,8 +81,9 @@ passport.use(new JwtStrategy({ jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearer
   return done(null, jwt_payload.user)
 }))
 
-
 app.use(passport.initialize());
+app.use(express.json());
+
 // app.use(passport.authenticate('jwt', { session: false }))
 
 
@@ -106,11 +109,13 @@ app.post('/api/login', function (req, res, next) {
 
 
 app.get("/api/hello", passport.authenticate('jwt', { session: false }), (req, res) => {
-
+  console.log(req.body);
   return res.json({ "msg": "If you see this message you are authenticated with JWT" })
 })
-
-
+app.get("/api/tasks", passport.authenticate('jwt', { session: false }), taskController.getTasks)
+app.get("/api/tasks/:id", passport.authenticate('jwt', { session: false }), taskController.getTaskById);
+app.post("/api/tasks", passport.authenticate('jwt', { session: false }), taskController.createTask)
+app.delete("/api/tasks/:id", passport.authenticate('jwt', { session: false }), taskController.deleteTaskById)
 http.createServer(app).listen(serverPort, function () {
   console.log('Your server is listening on port %d (http://localhost:%d)', serverPort, serverPort);
   console.log('Swagger-ui is available on http://localhost:%d/docs', serverPort);

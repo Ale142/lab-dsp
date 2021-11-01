@@ -19,6 +19,31 @@ paths:
       summary: Get list of tasks assigned or created
       description: Get list of tasks assigned or created
       operationId: getTasks
+      parameters:
+      - name: private
+        in: query
+        description: Filter task between private or public
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: completed
+        in: query
+        description: Filter task between completed or not
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: important
+        in: query
+        description: Filter task between important or not
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
       responses:
         "200":
           description: Successful operation
@@ -55,12 +80,12 @@ paths:
           content: {}
       x-codegen-request-body-name: body
       x-swagger-router-controller: Tasks
-  /tasks/{id}/assign:
+  /tasks/{id}/assignees:
     get:
       tags:
       - tasks
-      summary: Get the assignees of that task
-      description: Get the list of all the assignees of that task
+      summary: Get the all the assignees of that task
+      description: Get the list of assignees of that task
       operationId: getAssigneeTask
       parameters:
       - name: id
@@ -77,7 +102,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tasks'
+                $ref: '#/components/schemas/User'
         "400":
           description: Bad request
           content: {}
@@ -91,8 +116,8 @@ paths:
     put:
       tags:
       - tasks
-      summary: Mark task as completed by id
-      description: Mark as completed the task
+      summary: Mark task as completed
+      description: Mark the task id
       operationId: markComplete
       parameters:
       - name: id
@@ -120,22 +145,23 @@ paths:
           description: Task not found
           content: {}
       x-swagger-router-controller: Tasks
+  /tasks/{tid}/assignees/{uid}:
     post:
       tags:
       - tasks
-      summary: Assigned the task by id
-      description: Assigned the task with specified id
+      summary: Assigned the task to a user
+      description: Assigned the task by id to the user specified by id
       operationId: assignTask
       parameters:
-      - name: username
-        in: query
-        description: The user name to assign the task
+      - name: uid
+        in: path
+        description: The userid to assign the task
         required: true
-        style: form
-        explode: true
+        style: simple
+        explode: false
         schema:
           type: string
-      - name: id
+      - name: tid
         in: path
         description: Task is used to assign it to a user
         required: true
@@ -167,9 +193,17 @@ paths:
       description: Remove the assignation of the task
       operationId: removeAssignee
       parameters:
-      - name: id
+      - name: tid
         in: path
-        description: Task id used to remove the assign
+        description: Task id used to remove the assign from it
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      - name: uid
+        in: path
+        description: User id used to remove the assign from him
         required: true
         style: simple
         explode: false
@@ -382,25 +416,31 @@ components:
           type: boolean
           default: false
         owner:
-          $ref: '#/components/schemas/User/properties/id'
-        assignedTo:
-          $ref: '#/components/schemas/User/properties/id'
+          type: string
+          format: uri
+        assignees:
+          type: array
+          items:
+            type: string
+            format: uri
         self:
           type: string
           format: uri
       example:
         important: false
-        owner: "{}"
+        owner: http://example.com/aeiou
         private: true
         projects:
         - WA1_Project
         - WA1_Project
         description: description
+        assignees:
+        - http://example.com/aeiou
+        - http://example.com/aeiou
         self: http://example.com/aeiou
         id: 1.46581298050294517310021547018550336360931396484375
         completed: false
         deadline: 2000-01-23
-        assignedTo: null
     Tasks:
       type: object
       properties:
@@ -424,27 +464,31 @@ components:
         totalPages: 0.80082819046101150206595775671303272247314453125
         pageItems:
         - important: false
-          owner: "{}"
+          owner: http://example.com/aeiou
           private: true
           projects:
           - WA1_Project
           - WA1_Project
           description: description
+          assignees:
+          - http://example.com/aeiou
+          - http://example.com/aeiou
           self: http://example.com/aeiou
           id: 1.46581298050294517310021547018550336360931396484375
           completed: false
           deadline: 2000-01-23
-          assignedTo: null
         - important: false
-          owner: "{}"
+          owner: http://example.com/aeiou
           private: true
           projects:
           - WA1_Project
           - WA1_Project
           description: description
+          assignees:
+          - http://example.com/aeiou
+          - http://example.com/aeiou
           self: http://example.com/aeiou
           id: 1.46581298050294517310021547018550336360931396484375
           completed: false
           deadline: 2000-01-23
-          assignedTo: null
         self: http://example.com/aeiou
