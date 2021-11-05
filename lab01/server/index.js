@@ -112,10 +112,16 @@ app.get("/api/hello", passport.authenticate('jwt', { session: false }), (req, re
   console.log(req.body);
   return res.json({ "msg": "If you see this message you are authenticated with JWT" })
 })
-app.get("/api/tasks", passport.authenticate('jwt', { session: false }), taskController.getTasks)
+app.get("/api/assignees", passport.authenticate('jwt', { session: false }), userController.getAssignedTasks);
+app.get("/api/tasks", passport.authenticate('jwt', { session: false }), taskController.getTasks);
 app.get("/api/tasks/:id", passport.authenticate('jwt', { session: false }), taskController.getTaskById);
-app.post("/api/tasks", passport.authenticate('jwt', { session: false }), taskController.createTask)
-app.delete("/api/tasks/:id", passport.authenticate('jwt', { session: false }), taskController.deleteTaskById)
+app.post("/api/tasks", passport.authenticate('jwt', { session: false }), taskController.createTask);
+app.delete("/api/tasks/:id", passport.authenticate('jwt', { session: false }), taskController.deleteTaskById);
+app.put("/api/tasks/:id", passport.authenticate('jwt', { session: false }), taskController.updateTask);
+app.post("/api/tasks/:tid/assignees/:uid", passport.authenticate('jwt', { session: false }), taskController.assignTask);
+app.delete("/api/tasks/:tid/assignees", passport.authenticate('jwt', { session: false }), taskController.removeAssignee);
+app.put("/api/tasks/:tid/assignees", passport.authenticate('jwt', { session: false }), taskController.markComplete);
+app.get("/api/tasks/:tid/assignees", passport.authenticate('jwt', { session: false }), taskController.getAssigneeTask);
 http.createServer(app).listen(serverPort, function () {
   console.log('Your server is listening on port %d (http://localhost:%d)', serverPort, serverPort);
   console.log('Swagger-ui is available on http://localhost:%d/docs', serverPort);

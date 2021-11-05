@@ -33,3 +33,14 @@ module.exports.logoutUser = function logoutUser(req, res, next) {
       utils.writeJson(res, response);
     });
 };
+
+module.exports.getAssignedTasks = function getAssignedTasks(req, res, next) {
+  const user = req.user;
+  Users.getAssignedTasks(user)
+    .then(function (response) {
+      utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeJson(res, response);
+    });
+}

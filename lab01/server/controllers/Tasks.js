@@ -5,15 +5,22 @@
  * getTasks: handle the case if user is not logged
  * createTask
  * deleteTaskById
- *  
- * 
+ * updateTask (by Id)
+ * assignTask
+ * removeAssignee
+ * markComplete
+ * getAssigneeTask
  */
 var utils = require('../utils/writer.js');
 var Tasks = require('../service/TasksService');
 
 
-module.exports.assignTask = function assignTask(req, res, next, uid, tid) {
-  Tasks.assignTask(uid, tid)
+module.exports.assignTask = function assignTask(req, res, next,) {
+  const tid = req.params.tid;
+  const uid = req.params.uid;
+  const owner = req.user;
+  console.log(uid, tid, owner);
+  Tasks.assignTask(uid, tid, owner)
     .then(function (response) {
       utils.writeJson(res, response);
     })
@@ -55,8 +62,10 @@ module.exports.deleteTaskById = function deleteTaskById(req, res, next) {
     });
 };
 
-module.exports.getAssigneeTask = function getAssigneeTask(req, res, next, id) {
-  Tasks.getAssigneeTask(id)
+module.exports.getAssigneeTask = function getAssigneeTask(req, res, next) {
+  const taskId = req.params.tid;
+  const owner = req.user;
+  Tasks.getAssigneeTask(taskId, owner)
     .then(function (response) {
       utils.writeJson(res, response);
     })
@@ -95,8 +104,10 @@ module.exports.getTasks = function getTasks(req, res, next) {
     });
 };
 
-module.exports.markComplete = function markComplete(req, res, next, id) {
-  Tasks.markComplete(id)
+module.exports.markComplete = function markComplete(req, res, next) {
+  const owner = req.user;
+  const taskId = req.params.tid;
+  Tasks.markComplete(taskId, owner)
     .then(function (response) {
       utils.writeJson(res, response);
     })
@@ -105,8 +116,10 @@ module.exports.markComplete = function markComplete(req, res, next, id) {
     });
 };
 
-module.exports.removeAssignee = function removeAssignee(req, res, next, tid, uid) {
-  Tasks.removeAssignee(tid, uid)
+module.exports.removeAssignee = function removeAssignee(req, res, next) {
+  const owner = req.user;
+  const tid = req.params.tid;
+  Tasks.removeAssignee(tid, owner)
     .then(function (response) {
       utils.writeJson(res, response);
     })
@@ -115,8 +128,17 @@ module.exports.removeAssignee = function removeAssignee(req, res, next, tid, uid
     });
 };
 
-module.exports.updateTask = function updateTask(req, res, next, body, id) {
-  Tasks.updateTask(body, id)
+module.exports.updateTask = function updateTask(req, res, next) {
+  const id = req.params.id
+  const task = {
+    description: req.body.description,
+    important: req.body.important,
+    private: req.body.private,
+    project: req.body.project,
+    deadline: req.body.deadline,
+  }
+  const userId = req.user;
+  Tasks.updateTask(id, task, userId)
     .then(function (response) {
       utils.writeJson(res, response);
     })

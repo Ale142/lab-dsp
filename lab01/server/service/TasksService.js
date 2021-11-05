@@ -1,5 +1,4 @@
 'use strict';
-const { getTaskById } = require('../controllers/Tasks');
 const db = require('../db');
 
 /**
@@ -10,26 +9,50 @@ const db = require('../db');
  * tid BigDecimal Task is used to assign it to a user
  * returns Task
  **/
-exports.assignTask = function (uid, tid) {
+exports.assignTask = function (userId, taskId, owner) {
+  // console.log(userId, taskId, owner);
+
   return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-      "important": false,
-      "owner": "http://example.com/aeiou",
-      "private": true,
-      "projects": ["WA1_Project", "WA1_Project"],
-      "description": "description",
-      "assignees": ["http://example.com/aeiou", "http://example.com/aeiou"],
-      "self": "http://example.com/aeiou",
-      "id": 1.4658129805029452,
-      "completed": false,
-      "deadline": "2000-01-23"
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    // Check if the owner has that taskId hence it is able to assign it 
+    db.get("SELECT * FROM tasks WHERE id = ? AND owner = ?", [taskId, owner], (err, row) => {
+      console.log(row)
+      if (err) reject(err);
+      if (row === undefined || row.length === 0) reject(err);
+      else {
+        const sql = "UPDATE tasks SET assignedTo = $userId WHERE id = $taskId AND owner = $owner";
+        db.run(sql, {
+          $userId: userId,
+          $taskId: taskId,
+          $owner: owner
+        }, function (err) {
+          if (err) {
+            console.log(err);
+            reject(err)
+          }
+          else
+            resolve(exports.getTaskById(taskId));
+        })
+      }
+    })
+
+    // var examples = {};
+    // examples['application/json'] = {
+    //   "important": false,
+    //   "owner": "http://example.com/aeiou",
+    //   "private": true,
+    //   "projects": ["WA1_Project", "WA1_Project"],
+    //   "description": "description",
+    //   "assignees": ["http://example.com/aeiou", "http://example.com/aeiou"],
+    //   "self": "http://example.com/aeiou",
+    //   "id": 1.4658129805029452,
+    //   "completed": false,
+    //   "deadline": "2000-01-23"
+    // };
+    // if (Object.keys(examples).length > 0) {
+    //   resolve(examples[Object.keys(examples)[0]]);
+    // } else {
+    //   resolve();
+    // }
   });
 }
 
@@ -89,21 +112,32 @@ exports.deleteTaskById = function (id, userid) {
  * id BigDecimal Task id used to assign the get all assignee
  * returns User
  **/
-exports.getAssigneeTask = function (id) {
+exports.getAssigneeTask = function (taskId, owner) {
   return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-      "password": "password",
-      "name": "name",
-      "self": "http://example.com/aeiou",
-      "id": 0.8008281904610115,
-      "email": ""
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    const sql = "SELECT * FROM tasks WHERE id = $taskId AND owner = $owner";
+    db.get(sql, {
+      $taskId: taskId,
+      $owner: owner
+    }, (err, row) => {
+      if (err) reject(err);
+      else if (row === undefined || row.length === 0) reject(err);
+      else {
+        resolve(row);
+      }
+    })
+    // var examples = {};
+    // examples['application/json'] = {
+    //   "password": "password",
+    //   "name": "name",
+    //   "self": "http://example.com/aeiou",
+    //   "id": 0.8008281904610115,
+    //   "email": ""
+    // };
+    // if (Object.keys(examples).length > 0) {
+    //   resolve(examples[Object.keys(examples)[0]]);
+    // } else {
+    //   resolve();
+    // }
   });
 }
 
@@ -223,26 +257,47 @@ exports.getTasks = function (pvt, completed, important) {
  * id BigDecimal Task id used to mark it as completed
  * returns Task
  **/
-exports.markComplete = function (id) {
+exports.markComplete = function (taskId, assignedOwner) {
+  console.log(taskId, assignedOwner);
   return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-      "important": false,
-      "owner": "http://example.com/aeiou",
-      "private": true,
-      "projects": ["WA1_Project", "WA1_Project"],
-      "description": "description",
-      "assignees": ["http://example.com/aeiou", "http://example.com/aeiou"],
-      "self": "http://example.com/aeiou",
-      "id": 1.4658129805029452,
-      "completed": false,
-      "deadline": "2000-01-23"
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    // Check if logged user is assigned to the task to mark as completed
+    const sql1 = "SELECT * FROM tasks WHERE id = $taskId AND assignedTo = $assignedOwner";
+    db.get(sql1, {
+      $taskId: taskId,
+      $assignedOwner: assignedOwner
+    }, (err, row) => {
+      console.log(row);
+      if (err) reject(err);
+      else if (row === undefined || row.length === 0) reject(err);
+      else {
+        db.run("UPDATE tasks SET completed = 1 WHERE assignedTo = $assignedOwner AND id = $taskId", {
+          $assignedOwner: assignedOwner,
+          $taskId: taskId
+        }, (err) => {
+          if (err) reject(err);
+          else
+            resolve(exports.getTaskById(taskId));
+        })
+      }
+    })
+    // var examples = {};
+    // examples['application/json'] = {
+    //   "important": false,
+    //   "owner": "http://example.com/aeiou",
+    //   "private": true,
+    //   "projects": ["WA1_Project", "WA1_Project"],
+    //   "description": "description",
+    //   "assignees": ["http://example.com/aeiou", "http://example.com/aeiou"],
+    //   "self": "http://example.com/aeiou",
+    //   "id": 1.4658129805029452,
+    //   "completed": false,
+    //   "deadline": "2000-01-23"
+    // };
+    // if (Object.keys(examples).length > 0) {
+    //   resolve(examples[Object.keys(examples)[0]]);
+    // } else {
+    //   resolve();
+    // }
   });
 }
 
@@ -255,9 +310,28 @@ exports.markComplete = function (id) {
  * uid BigDecimal User id used to remove the assign from him
  * no response value expected for this operation
  **/
-exports.removeAssignee = function (tid, uid) {
+exports.removeAssignee = function (tid, owner) {
+  console.log(tid, owner);
   return new Promise(function (resolve, reject) {
-    resolve();
+    db.get("SELECT * FROM tasks WHERE id = ? AND owner = ?", [tid, owner], (err, row) => {
+      console.log(row)
+      if (err) reject(err);
+      if (row === undefined || row.length === 0) reject(err);
+      else {
+        const sql = "UPDATE tasks SET assignedTo = NULL WHERE id = $taskId AND owner = $owner";
+        db.run(sql, {
+          $taskId: tid,
+          $owner: owner
+        }, function (err) {
+          if (err) {
+            console.log(err);
+            reject(err)
+          }
+          else
+            resolve(exports.getTaskById(tid));
+        })
+      }
+    })
   });
 }
 
@@ -269,9 +343,25 @@ exports.removeAssignee = function (tid, uid) {
  * id BigDecimal Id values that is used to get the specific task
  * no response value expected for this operation
  **/
-exports.updateTask = function (body, id) {
+exports.updateTask = function (taskId, task, userId) {
+  console.log(taskId, task, userId);
   return new Promise(function (resolve, reject) {
-    resolve();
+    const sql = "UPDATE tasks SET description = ifnull($description, description), important = ifnull($important, important), private = ifnull($private, private), project = ifnull($project, project), deadline = ifnull($deadline, deadline) WHERE owner = $owner AND id = $taskId";
+    db.run(sql, {
+      $description: task.description,
+      $important: task.important,
+      $private: task.private,
+      $project: task.project,
+      $deadline: task.deadline,
+      $owner: userId,
+      $taskId: taskId
+    }, function (err) {
+      if (err) reject(err);
+      else {
+        resolve(exports.getTaskById(taskId));
+      }
+    })
+
   });
 }
 
