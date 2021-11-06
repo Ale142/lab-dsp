@@ -90,6 +90,7 @@ module.exports.getTasks = function getTasks(req, res, next) {
   var pvt = !req.query.private ? null : req.query.private;
   var important = !req.query.important ? null : req.query.important;
   var completed = !req.query.completed ? null : req.query.completed;
+  console.log("User logged: ", req.user);
   if (!req.user) {
     console.log("No user logged");
     // If there is no user logged, take all the not private (public) tasks
