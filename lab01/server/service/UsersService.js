@@ -86,7 +86,7 @@ exports.logoutUser = function () {
 
 exports.getAssignedTasks = function (owner) {
   return new Promise(function (resolve, reject) {
-    const sql = "SELECT t.id, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.owner, t.assignedTo FROM tasks t, users u WHERE t.assignedTo = ? AND t.assignedTo = u.id";
+    const sql = "SELECT t.id, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.owner FROM tasks t, assignments a WHERE a.user = ? AND t.id = a.task";
     db.all(sql, [owner], (err, rows) => {
       console.log("rows:", rows);
       if (err) reject(err);

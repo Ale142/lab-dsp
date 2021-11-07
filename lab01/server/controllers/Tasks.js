@@ -1,15 +1,17 @@
 'use strict';
+
+// TODO: handle the case if user is not logged when getTasks
 /**
  * DONE:
- * getTaskById
- * getTasks: handle the case if user is not logged
+ * getTaskById: fetch also the assignees of that task
+ * getTasks: fetch also the assignee of the tasks
  * createTask
  * deleteTaskById
  * updateTask (by Id)
  * assignTask
- * removeAssignee
- * markComplete
- * getAssigneeTask
+ * removeAssignee (changed route to /api/tasks/:tid/assignee/:uid)
+ * markComplete (check if logged user is in the assignments table)
+ * getAssigneeTask (get the list of the users assigned to the task )
  */
 var utils = require('../utils/writer.js');
 var Tasks = require('../service/TasksService');
@@ -51,9 +53,9 @@ module.exports.createTask = function createTask(req, res, next) {
 };
 
 module.exports.deleteTaskById = function deleteTaskById(req, res, next) {
-  const id = req.params.id;
-  const userid = req.user;
-  Tasks.deleteTaskById(id, userid)
+  const tid = req.params.tid;
+  const owner = req.user;
+  Tasks.deleteTaskById(tid, owner)
     .then(function (response) {
       utils.writeJson(res, response);
     })
@@ -119,8 +121,9 @@ module.exports.markComplete = function markComplete(req, res, next) {
 
 module.exports.removeAssignee = function removeAssignee(req, res, next) {
   const owner = req.user;
+  const uid = req.params.uid;
   const tid = req.params.tid;
-  Tasks.removeAssignee(tid, owner)
+  Tasks.removeAssignee(tid, uid, owner)
     .then(function (response) {
       utils.writeJson(res, response);
     })

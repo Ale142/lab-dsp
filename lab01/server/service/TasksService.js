@@ -19,12 +19,8 @@ exports.assignTask = function (userId, taskId, owner) {
       if (err) reject(err);
       if (row === undefined || row.length === 0) reject(err);
       else {
-        const sql = "UPDATE tasks SET assignedTo = $userId WHERE id = $taskId AND owner = $owner";
-        db.run(sql, {
-          $userId: userId,
-          $taskId: taskId,
-          $owner: owner
-        }, function (err) {
+        const sql = "INSERT INTO assignments (task, user) VALUES (?, ?)";
+        db.run(sql, [taskId, userId], function (err) {
           if (err) {
             console.log(err);
             reject(err)
@@ -89,10 +85,10 @@ exports.createTask = (task) => {
  * id BigDecimal Id of task to delete
  * no response value expected for this operation
  **/
-exports.deleteTaskById = function (id, userid) {
+exports.deleteTaskById = function (taskId, userid) {
   return new Promise(function (resolve, reject) {
     const sql = "DELETE FROM tasks WHERE id = ? AND owner = ?";
-    db.run(sql, [id, userid], (err) => {
+    db.run(sql, [taskId, userid], (err) => {
       if (err) {
         reject(err);
         return;
@@ -114,15 +110,33 @@ exports.deleteTaskById = function (id, userid) {
  **/
 exports.getAssigneeTask = function (taskId, owner) {
   return new Promise(function (resolve, reject) {
-    const sql = "SELECT * FROM tasks WHERE id = $taskId AND owner = $owner";
-    db.get(sql, {
+    const sql = "SELECT * FROM tasks t, assignments a, users u WHERE t.id = a.task AND u.id = a.user AND t.id = $taskId AND t.owner = $owner";
+    db.all(sql, {
       $taskId: taskId,
       $owner: owner
-    }, (err, row) => {
+    }, (err, rows) => {
+      console.log(rows);
       if (err) reject(err);
-      else if (row === undefined || row.length === 0) reject(err);
+      else if (rows === undefined || rows.length === 0) resolve({});
       else {
-        resolve(row);
+        const task = rows[0];
+        resolve(
+          {
+            id: task.id,
+            description: task.description,
+            important: task.important,
+            private: task.private,
+            project: task.project,
+            deadline: task.deadline,
+            completed: task.completed,
+            owner: task.owner,
+            assignments: rows.map(r => ({
+              id: r.user,
+              username: r.email,
+              name: r.name,
+            }))
+          }
+        );
       }
     })
     // var examples = {};
@@ -154,21 +168,27 @@ exports.getTaskById = function (id) {
     db.get(sql, [id], (err, row) => {
       if (err) reject(err);
       if (row === undefined) reject({ code: 404, payload: "Task not found" });
+      db.all("SELECT u.email, u.id FROM assignments a, users u WHERE a.task = ? AND u.id = a.user", [id], (err, rows) => {
 
-      else {
-        const task = {
-          id: row.id,
-          description: row.description,
-          important: row.important,
-          private: row.private,
-          project: row.project,
-          deadline: row.deadline,
-          completed: row.completed,
-          owner: row.owner,
-          assignedTo: row.assignedTo
+        if (err) reject(err);
+
+        else {
+          const task = {
+            id: row.id,
+            description: row.description,
+            important: row.important,
+            private: row.private,
+            project: row.project,
+            deadline: row.deadline,
+            completed: row.completed,
+            owner: row.owner,
+            assignments: rows
+          }
+          resolve(task);
         }
-        resolve(task);
-      }
+
+      })
+
     })
   });
 }
@@ -186,7 +206,7 @@ exports.getTaskById = function (id) {
 exports.getTasks = function (pvt, completed, important) {
   return new Promise(function (resolve, reject) {
     console.log("Private:", pvt, " Important: ", important, " Completed:", completed);
-    const sql = "SELECT * FROM tasks WHERE ($pvt is NULL OR private = $pvt) AND ($completed is NULL OR completed = $completed) AND ($important is NULL OR important = $important)";
+    const sql = "SELECT t.id, t.description, t.important, t.private, t.completed, t.deadline, t.project, t.owner, u.email, u.id as userid FROM tasks t, assignments a, users u WHERE ($pvt is NULL OR t.private = $pvt) AND ($completed is NULL OR t.completed = $completed) AND ($important is NULL OR t.important = $important) AND a.task = t.id AND a.user = u.id";
     db.all(sql, {
       $pvt: pvt,
       $completed: completed,
@@ -195,19 +215,28 @@ exports.getTasks = function (pvt, completed, important) {
       if (err) reject(err);
       if (rows === undefined) resolve({ code: 404, payload: "Tasks not found" });
       else {
-        const tasks = rows.map(task => (
-          {
-            id: task.id,
-            description: task.description,
-            important: task.important,
-            private: task.private,
-            project: task.project,
-            deadline: task.deadline,
-            completed: task.completed,
-            owner: task.owner,
-            assignedTo: task.assignedTo
+        let tasks = []
+        rows.forEach(task => {
+          const currentTask = tasks.find(t => t.id === task.id);
+          console.log(currentTask);
+          if (currentTask === undefined) {
+            tasks.push({
+              id: task.id,
+              description: task.description,
+              important: task.important,
+              private: task.private,
+              project: task.project,
+              deadline: task.deadline,
+              completed: task.completed,
+              owner: task.owner,
+              assignments: [{ id: task.userid, username: task.email }]
+            })
+          } else {
+            tasks[tasks.findIndex(t => t.id === currentTask.id)] = { ...currentTask, assignments: [...currentTask.assignments, { id: task.userid, username: task.email }] }
           }
-        ));
+        });
+
+        console.log(tasks);
         resolve(tasks);
       }
     })
@@ -261,7 +290,7 @@ exports.markComplete = function (taskId, assignedOwner) {
   console.log(taskId, assignedOwner);
   return new Promise(function (resolve, reject) {
     // Check if logged user is assigned to the task to mark as completed
-    const sql1 = "SELECT * FROM tasks WHERE id = $taskId AND assignedTo = $assignedOwner";
+    const sql1 = "SELECT * FROM assignments a WHERE a.task = $taskId AND a.user = $assignedOwner";
     db.get(sql1, {
       $taskId: taskId,
       $assignedOwner: assignedOwner
@@ -310,18 +339,19 @@ exports.markComplete = function (taskId, assignedOwner) {
  * uid BigDecimal User id used to remove the assign from him
  * no response value expected for this operation
  **/
-exports.removeAssignee = function (tid, owner) {
-  console.log(tid, owner);
+exports.removeAssignee = function (tid, uid, owner) {
+  console.log(tid, uid, owner);
   return new Promise(function (resolve, reject) {
+    // Check if user logged is the owner of the task
     db.get("SELECT * FROM tasks WHERE id = ? AND owner = ?", [tid, owner], (err, row) => {
       console.log(row)
       if (err) reject(err);
       if (row === undefined || row.length === 0) reject(err);
       else {
-        const sql = "UPDATE tasks SET assignedTo = NULL WHERE id = $taskId AND owner = $owner";
+        const sql = "DELETE FROM assignments WHERE task = $taskId AND user = $userId";
         db.run(sql, {
           $taskId: tid,
-          $owner: owner
+          $userId: uid
         }, function (err) {
           if (err) {
             console.log(err);
