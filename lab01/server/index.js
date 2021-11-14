@@ -133,7 +133,9 @@ app.get("/api/hello", passport.authenticate('jwt', { session: false }), (req, re
 
   return res.json({ "msg": "If you see this message you are authenticated with JWT" })
 })
-app.get("/api/assignees", passport.authenticate('jwt', { session: false }), userController.getAssignedTasks);
+app.get("/api/assignees", passport.authenticate('jwt', { session: false }), userController.getUserAssignedTasks);
+app.get("/api/created", passport.authenticate('jwt', { session: false }), userController.getUserCreatedTasks);
+app.delete("/api/logout", passport.authenticate('jwt', { session: false }), userController.logoutUser);
 app.get("/api/tasks", query('private').isBoolean().customSanitizer(value => {
   if (value) return 1; else return 0;
 }).optional(), query('important').isBoolean().customSanitizer(value => {
@@ -142,12 +144,13 @@ app.get("/api/tasks", query('private').isBoolean().customSanitizer(value => {
   if (value) return 1; else return 0;
 }).optional(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.getTasks);
 app.get("/api/tasks/:id", param('id').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.getTaskById);
+app.post("/api/tasks/assignment", passport.authenticate('jwt', { session: false }), taskController.automaticAssign);
 app.post("/api/tasks", checkSchema(TaskSchema), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.createTask);
 app.delete("/api/tasks/:id", param('id').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.deleteTaskById);
 app.put("/api/tasks/:id", param('id').isInt(), validateMiddleware, checkSchema(TaskSchema), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.updateTask);
 app.post("/api/tasks/:tid/assignees/:uid", param('tid').isInt(), param('uid').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.assignTask);
 app.delete("/api/tasks/:tid/assignees/:uid", param('tid').isInt(), param('uid').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.removeAssignee);
-app.put("/api/tasks/:tid/assignees", param('tid').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.markComplete);
+app.put("/api/tasks/:tid/complete", param('tid').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.markComplete);
 app.get("/api/tasks/:tid/assignees", param('tid').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.getAssigneeTask);
 http.createServer(app).listen(serverPort, function () {
   console.log('Your server is listening on port %d (http://localhost:%d)', serverPort, serverPort);

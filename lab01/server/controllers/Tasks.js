@@ -150,3 +150,14 @@ module.exports.updateTask = function updateTask(req, res, next) {
       utils.writeJson(res, response);
     });
 };
+
+module.exports.automaticAssign = function automaticAssign(req, res, next) {
+  const owner = req.user;
+  Tasks.automaticAssign(owner)
+    .then(function (response) {
+      utils.writeJson(res, response)
+    })
+    .catch(function (response) {
+      utils.writeJson(res, response);
+    })
+}

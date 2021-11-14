@@ -31,7 +31,7 @@ exports.getUserById = function (id) {
     db.get(sql, [id], (err, row) => {
       if (err) reject(err);
       else if (row === undefined)
-        resolve(false);
+        resolve(404);
       else {
         const user = { id: row.id, email: row.email, name: row.name };
         resolve(user);
@@ -56,7 +56,7 @@ exports.loginUser = function (email, password) {
       }
       else if (row === undefined) {
         console.log(row);
-        resolve(false);
+        resolve(404);
       } else {
         console.log("row:", row);
         const user = { id: row.id, email: row.email, name: row.name };
@@ -64,7 +64,7 @@ exports.loginUser = function (email, password) {
           if (result)
             resolve(user);
           else
-            resolve(false);
+            resolve(401);
         })
       }
     })
@@ -84,13 +84,13 @@ exports.logoutUser = function () {
   });
 }
 
-exports.getAssignedTasks = function (owner) {
+exports.getUserAssignedTasks = function (owner) {
   return new Promise(function (resolve, reject) {
     const sql = "SELECT t.id, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.owner FROM tasks t, assignments a WHERE a.user = ? AND t.id = a.task";
     db.all(sql, [owner], (err, rows) => {
       console.log("rows:", rows);
       if (err) reject(err);
-      else if (rows === undefined || rows.length === 0) reject(err);
+      else if (rows === undefined || rows.length === 0) resolve(204);
       else {
         resolve(rows);
       }
@@ -99,3 +99,14 @@ exports.getAssignedTasks = function (owner) {
   })
 }
 
+
+exports.getUserCreatedTasks = function (owner) {
+  return new Promise(function (resolve, reject) {
+    const sql = "SELECT * from tasks WHERE owner = ?";
+    db.all(sql, [owner], (err, rows) => {
+      if (err) reject(err);
+      else if (rows.length === 0 || rows === undefined) resolve(204);
+      else resolve(rows);
+    })
+  })
+}

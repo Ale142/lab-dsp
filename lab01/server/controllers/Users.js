@@ -25,22 +25,28 @@ module.exports.loginUser = function loginUser(req, res, next) {
 };
 
 module.exports.logoutUser = function logoutUser(req, res, next) {
-  Users.logoutUser()
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeJson(res, response);
-    });
+  req.logout();
+  res.clearCookie('jwt').end();
 };
 
-module.exports.getAssignedTasks = function getAssignedTasks(req, res, next) {
+module.exports.getUserAssignedTasks = function getUserAssignedTasks(req, res, next) {
   const user = req.user;
-  Users.getAssignedTasks(user)
+  Users.getUserAssignedTasks(user)
     .then(function (response) {
       utils.writeJson(res, response);
     })
     .catch(function (response) {
       utils.writeJson(res, response);
     });
+}
+
+module.exports.getUserCreatedTasks = function getUserCreatedTasks(req, res, next) {
+  const user = req.user;
+  Users.getUserCreatedTasks(user)
+    .then(function (response) {
+      utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeJson(res, response);
+    })
 }

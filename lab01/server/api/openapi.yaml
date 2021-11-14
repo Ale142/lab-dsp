@@ -54,6 +54,8 @@ paths:
         "401":
           description: Not authorized to get the tasks
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Tasks
     post:
       tags:
@@ -76,8 +78,10 @@ paths:
           description: Bad request
           content: {}
         "401":
-          description: Not authorized to update task
+          description: Unauthorized
           content: {}
+        "500":
+          description: Internal server error
       x-codegen-request-body-name: body
       x-swagger-router-controller: Tasks
   /tasks/{id}/assignees:
@@ -112,7 +116,25 @@ paths:
         "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Tasks
+  /tasks/assignment:
+    post:
+      summary: Balance task assignment
+      description: Tasks owned by the user logged that are not assigned to anyone are automatically assigned to users of the service 
+      operationId: automaticAssign
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/Tasks'
+        "500":
+          description: Internal server erro
+
+  /tasks/{id}/complete:
     put:
       tags:
       - tasks
@@ -144,6 +166,8 @@ paths:
         "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Tasks
     
   /tasks/{tid}/assignees/{uid}:
@@ -186,6 +210,8 @@ paths:
         "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Tasks
     delete:
       tags:
@@ -211,7 +237,7 @@ paths:
         schema:
           type: number
       responses:
-        "200":
+        "204":
           description: Successfully removed the assignation of that task
           content: {}
         "400":
@@ -223,6 +249,8 @@ paths:
         "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Tasks
     
   /tasks/{id}:
@@ -251,8 +279,10 @@ paths:
           description: Not authorized to update task
           content: {}
         "404":
-          description: Nof found
+          description: Not found
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Tasks
     put:
       tags:
@@ -285,6 +315,8 @@ paths:
         "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
       x-codegen-request-body-name: body
       x-swagger-router-controller: Tasks
     delete:
@@ -302,7 +334,7 @@ paths:
         schema:
           type: number
       responses:
-        "200":
+        "204":
           description: Successfully deleted
           content: {}
         "401":
@@ -311,6 +343,8 @@ paths:
         "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Tasks
   /login:
     post:
@@ -325,6 +359,8 @@ paths:
         "400":
           description: Invalid username or password
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Users
   /logout:
     delete:
@@ -336,6 +372,8 @@ paths:
         "200":
           description: Successful operation
           content: {}
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Users
   /current:
     get:
@@ -350,14 +388,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Users
-  /assignees:
+  /assigned:
     get:
       tags:
         - users
       summary: Get the tasks assigned to the user logged
       description: Get all the tasks that are assigned to the logged user
-      operationId: getAssignedTasks
+      operationId: getUserAssignedTasks
       responses:
         "200":
           description: Successful operation
@@ -365,6 +405,25 @@ paths:
             application/json:
               schema:
                 $ref: '#components/schemas/Tasks'
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Users 
+  /created:
+    get:
+      tags:
+        - users
+      summary: Get the tasks created from the user logged
+      description: Get all the tasks that are created to the logged user
+      operationId: getUserCreatedTasks
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/Tasks'
+        "500":
+          description: Internal server error
       x-swagger-router-controller: Users 
 components:
   schemas:
