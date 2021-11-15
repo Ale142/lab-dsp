@@ -20,34 +20,43 @@ paths:
       description: Get list of tasks assigned or created
       operationId: getTasks
       parameters:
-        - name: private
-          in: query
-          required: false
-          description: Filter task between private or public
-          schema:
-            type: boolean
-        - name: completed
-          in: query
-          required: false
-          description: Filter task between completed or not
-          schema:
-            type: boolean
-        - name: important
-          in: query
-          required: false
-          description: Filter task between important or not
-          schema:
-            type: boolean
+      - name: private
+        in: query
+        description: Filter task between private or public
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: completed
+        in: query
+        description: Filter task between completed or not
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: important
+        in: query
+        description: Filter task between important or not
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
       responses:
-        200:
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Tasks'
-        401:
+        "401":
           description: Not authorized to get the tasks
           content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
     post:
       tags:
       - tasks
@@ -62,17 +71,19 @@ paths:
               $ref: '#/components/schemas/Task'
         required: true
       responses:
-        201:
+        "201":
           description: Created
           content: {}
-        400:
+        "400":
           description: Bad request
           content: {}
-        401:
-          description: Not authorized to update task
+        "401":
+          description: Unauthorized
           content: {}
+        "500":
+          description: Internal server error
       x-codegen-request-body-name: body
-
+      x-swagger-router-controller: Tasks
   /tasks/{id}/assignees:
     get:
       tags:
@@ -81,57 +92,84 @@ paths:
       description: Get the list of assignees of that task
       operationId: getAssigneeTask
       parameters:
-        - name: id
-          in: path
-          description: Task id used to assign the get all assignee
-          required: true
-          schema:
-            type: number
+      - name: id
+        in: path
+        description: Task id used to assign the get all assignee
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
       responses:
-        200:
+        "200":
           description: Successfully get the assignees of that task
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-        400:
+        "400":
           description: Bad request
           content: {}
-        401:
+        "401":
           description: 'Not authorized to get the assigned task '
           content: {}
-        404:
+        "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
+  /tasks/assignment:
+    post:
+      summary: Balance task assignment
+      description: Tasks owned by the user logged that are not assigned to anyone are automatically assigned to users of the service 
+      operationId: automaticAssign
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/Tasks'
+        "500":
+          description: Internal server erro
+
+  /tasks/{id}/complete:
     put:
       tags:
       - tasks
       summary: Mark task as completed
-      description: Mark the task id 
+      description: Mark the task id
       operationId: markComplete
       parameters:
-        - name: id
-          in: path
-          description: Task id used to mark it as completed
-          required: true
-          schema:
-            type: number
+      - name: id
+        in: path
+        description: Task id used to mark it as completed
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
       responses:
-        200:
+        "200":
           description: Successfully marked as complete that task task
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
-        400:
+        "400":
           description: Bad request
           content: {}
-        401:
+        "401":
           description: 'Not authorized to mark as complete '
           content: {}
-        404:
+        "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
+    
   /tasks/{tid}/assignees/{uid}:
     post:
       tags:
@@ -144,64 +182,77 @@ paths:
         in: path
         description: The userid to assign the task
         required: true
+        style: simple
+        explode: false
         schema:
           type: string
-          
       - name: tid
         in: path
         description: Task is used to assign it to a user
         required: true
+        style: simple
+        explode: false
         schema:
           type: number
       responses:
-        200:
+        "200":
           description: Successfully assigned the task
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
-        400:
+        "400":
           description: Bad request
           content: {}
-        401:
+        "401":
           description: Not authorized to assign the task
           content: {}
-        404:
+        "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
     delete:
       tags:
       - tasks
       summary: 'Remove assignee '
-      description: Remove the assignation of the task
+      description: Remove the assignation of the task identified by tid from the user identified by uid
       operationId: removeAssignee
       parameters:
-        - name: tid
-          in: path
-          description: Task id used to remove the assign from it
-          required: true
-          schema:
-            type: number
-        - name: uid
-          in: path
-          description: User id used to remove the assign from him
-          required: true
-          schema:
-            type: number
+      - name: tid
+        in: path
+        description: Task id used to remove the assign from it
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      - name: uid
+        in: path
+        description: User id used to remote the assignment from task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
       responses:
-        200:
+        "204":
           description: Successfully removed the assignation of that task
           content: {}
-        400:
+        "400":
           description: Bad request
           content: {}
-        401:
+        "401":
           description: Not authorized to delete the assignee
           content: {}
-        404:
+        "404":
           description: Task not found
           content: {}
-  
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
+    
   /tasks/{id}:
     get:
       tags:
@@ -209,37 +260,44 @@ paths:
       summary: Get task by id
       operationId: getTaskById
       parameters:
-        - name: id
-          in: path
-          description: Id values that is used to get the specific task
-          required: true
-          schema:
-            type: number
+      - name: id
+        in: path
+        description: Id values that is used to get the specific task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
       responses:
-        200:
+        "200":
           description: Successfull operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
-        401:
+        "401":
           description: Not authorized to update task
           content: {}
-        404:
-          description: Nof found
+        "404":
+          description: Not found
           content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
     put:
       tags:
       - tasks
       summary: Update an existing task
       operationId: updateTask
       parameters:
-        - name: id
-          in: path
-          description: Id values that is used to get the specific task
-          required: true
-          schema:
-            type: number
+      - name: id
+        in: path
+        description: Id values that is used to get the specific task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
       requestBody:
         description: Task object that need to be updated
         content:
@@ -248,16 +306,19 @@ paths:
               $ref: '#/components/schemas/Task'
         required: true
       responses:
-        200:
+        "200":
           description: Successfully updated
           content: {}
-        401:
+        "401":
           description: Not authorized to update task
           content: {}
-        404:
+        "404":
           description: Task not found
           content: {}
+        "500":
+          description: Internal server error
       x-codegen-request-body-name: body
+      x-swagger-router-controller: Tasks
     delete:
       tags:
       - tasks
@@ -268,66 +329,23 @@ paths:
         in: path
         description: Id of task to delete
         required: true
+        style: simple
+        explode: false
         schema:
           type: number
       responses:
-        200:
+        "204":
           description: Successfully deleted
           content: {}
-        401:
+        "401":
           description: Not authorized to delete the task
           content: {}
-        404:
+        "404":
           description: Task not found
           content: {}
-  /users/{id}/tasks/assigned:
-    get:
-      tags:
-        - users
-      summary: Tasks assigned to the user Id
-      description: Get the list of tasks that are assigned to the user with Id
-      operationId: getUsersAssignedTasks
-      parameters:
-      - name: id
-        in: path
-        description: Id of the user
-        required: true
-        schema:
-          type: number
-      responses:
-        200:
-          description: Successfully get the list
-          content:
-           application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        404:
-          description: "User not found"
-  
-  /users/{id}/tasks/created:
-    get:
-      tags:
-        - users
-      summary: Tasks created from the user id
-      description: Get the list of tasks that are created from the user with Id
-      operationId: getUsersCreatedTasks
-      parameters:
-      - name: id
-        in: path
-        description: Id of the user
-        required: true
-        schema:
-          type: number
-      responses:
-        200:
-          description: Successfully get the list
-          content:
-           application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        404:
-          description: "User not found"
-          
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
   /login:
     post:
       tags:
@@ -335,12 +353,15 @@ paths:
       summary: Login user
       operationId: loginUser
       responses:
-        200:
+        "200":
           description: Successful operation
           content: {}
-        400:
+        "400":
           description: Invalid username or password
           content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Users
   /logout:
     delete:
       tags:
@@ -348,9 +369,12 @@ paths:
       summary: Logout user
       operationId: logoutUser
       responses:
-        200:
+        "200":
           description: Successful operation
           content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Users
   /current:
     get:
       tags:
@@ -358,12 +382,49 @@ paths:
       summary: Get current logged user
       operationId: getCurrentUser
       responses:
-        200:
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Users
+  /assigned:
+    get:
+      tags:
+        - users
+      summary: Get the tasks assigned to the user logged
+      description: Get all the tasks that are assigned to the logged user
+      operationId: getUserAssignedTasks
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/Tasks'
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Users 
+  /created:
+    get:
+      tags:
+        - users
+      summary: Get the tasks created from the user logged
+      description: Get all the tasks that are created to the logged user
+      operationId: getUserCreatedTasks
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/Tasks'
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Users 
 components:
   schemas:
     User:
@@ -391,6 +452,12 @@ components:
         self:
           type: string
           format: uri
+      example:
+        password: password
+        name: name
+        self: http://example.com/aeiou
+        id: 0.80082819046101150206595775671303272247314453125
+        email: ""
     Task:
       required:
       - description
@@ -435,6 +502,21 @@ components:
         self:
           type: string
           format: uri
+      example:
+        important: false
+        owner: http://example.com/aeiou
+        private: true
+        projects:
+        - WA1_Project
+        - WA1_Project
+        description: description
+        assignees:
+        - http://example.com/aeiou
+        - http://example.com/aeiou
+        self: http://example.com/aeiou
+        id: 1.46581298050294517310021547018550336360931396484375
+        completed: false
+        deadline: 2000-01-23
     Tasks:
       type: object
       properties:
@@ -452,4 +534,37 @@ components:
         self:
           type: string
           format: uri
-
+      example:
+        next: http://example.com/aeiou
+        pageNumber: 6.02745618307040320615897144307382404804229736328125
+        totalPages: 0.80082819046101150206595775671303272247314453125
+        pageItems:
+        - important: false
+          owner: http://example.com/aeiou
+          private: true
+          projects:
+          - WA1_Project
+          - WA1_Project
+          description: description
+          assignees:
+          - http://example.com/aeiou
+          - http://example.com/aeiou
+          self: http://example.com/aeiou
+          id: 1.46581298050294517310021547018550336360931396484375
+          completed: false
+          deadline: 2000-01-23
+        - important: false
+          owner: http://example.com/aeiou
+          private: true
+          projects:
+          - WA1_Project
+          - WA1_Project
+          description: description
+          assignees:
+          - http://example.com/aeiou
+          - http://example.com/aeiou
+          self: http://example.com/aeiou
+          id: 1.46581298050294517310021547018550336360931396484375
+          completed: false
+          deadline: 2000-01-23
+        self: http://example.com/aeiou
