@@ -15,7 +15,7 @@
  */
 var utils = require('../utils/writer.js');
 var Tasks = require('../service/TasksService');
-
+const fs = require("fs")
 
 module.exports.assignTask = function assignTask(req, res, next,) {
   const tid = req.params.tid;
@@ -164,7 +164,7 @@ module.exports.automaticAssign = function automaticAssign(req, res, next) {
 
 module.exports.assignImage = function assignImage(req, res, next) {
   const owner = req.user;
-  const taskId = req.params.id;
+  const taskId = req.params.tid;
   const imageName = req.file.originalname;
   const imageType = req.file.mimetype.split("/")[1];
   console.log(JSON.stringify(req.file));
@@ -189,13 +189,32 @@ module.exports.getAssignedImage = function getAssignedImage(req, res, next) {
 
 module.exports.deleteAssignedImage = function deleteAssignedImage(req, res, next) {
   const user = req.user;
-  const taskId = req.params.id;
-  const fileName = req.body.fileName;
-  const fileType = req.body.fileType;
+  const taskId = req.params.tid;
+  const imgId = req.params.imgid;
 
-  Tasks.deleteAssignedImage(taskId, user, fileName, fileType)
+  Tasks.deleteAssignedImage(taskId, user, imgId)
     .then(function (response) {
       utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeJson(res, response);
+    })
+}
+
+module.exports.getImageFile = function getImageFile(req, res, next) {
+  const origin = req.query.origin
+  const target = req.query.target
+  const imageName = req.query.name
+  const taskId = req.params.tid;
+  const imgId = req.params.imgid;
+  console.log(`Origin ${origin}, Target ${target}, imageName ${imageName}, taskId ${taskId}`);
+  Tasks.getImageFile(taskId, imgId, imageName, origin, target)
+    .then(function (response) {
+      res.sendFile(response.file, { root: './uploads' })
+
+      if (response.converted)
+        fs.unlinkSync(__dirname + `/../uploads/${response.file}`)
+      // utils.writeJson(res, response);
     })
     .catch(function (response) {
       utils.writeJson(res, response);

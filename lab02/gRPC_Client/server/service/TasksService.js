@@ -1,5 +1,8 @@
 'use strict';
 const db = require('../db');
+const converter = require('./clientConverter');
+const fs = require('fs')
+var utils = require('../utils/writer.js');
 
 /**
  * Assigned the task to a user
@@ -381,8 +384,10 @@ exports.assignImage = function (taskId, owner, fileName, imageType) {
       }
       else if (row.length === 0 || row === undefined) reject(err);
       else {
+        // File is saved only with his name
+        const fileWithoutType = fileName.split(/(\.(?:jpe?g|png|gif))$/)[0]
         const sql2 = "INSERT INTO images (name, task, type) VALUES (?, ?, ?)";
-        db.run(sql2, [fileName, taskId, imageType], (err) => {
+        db.run(sql2, [fileWithoutType, taskId, imageType], (err) => {
           if (err) {
             reject(err);
           }
@@ -393,18 +398,17 @@ exports.assignImage = function (taskId, owner, fileName, imageType) {
   })
 }
 
-exports.deleteAssignedImage = function (taskId, user, fileName, fileType) {
+exports.deleteAssignedImage = function (taskId, user, imgId) {
   return new Promise(function (resolve, reject) {
     db.get("SELECT * FROM tasks WHERE id = ? AND owner = ?", [taskId, user], (err, row) => {
       console.log(row)
       if (err) reject(err);
       if (row === undefined || row.length === 0) reject({ code: 404, payload: "Task not found" });
       else {
-        const sql = "DELETE FROM images WHERE task = $taskId AND name = $fileName AND type = $fileType";
+        const sql = "DELETE FROM images WHERE task = $taskId AND id = $imgId";
         db.run(sql, {
           $taskId: taskId,
-          $fileName: fileName,
-          $fileType: fileType
+          $imgId: imgId,
         }, function (err) {
           if (err) {
             console.log(err);
@@ -415,5 +419,40 @@ exports.deleteAssignedImage = function (taskId, user, fileName, fileType) {
         })
       }
     })
+  })
+}
+
+exports.getImageFile = function (taskId, imgId, imageName, origin, target) {
+  return new Promise(function (resolve, reject) {
+    const sql = "SELECT * FROM images WHERE task = ? AND id = ?";
+    db.get(sql, [taskId, imgId], async (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      else if (row === undefined || row.length === 0) {
+        reject(utils.respondWithCode(404, "Image not found"));
+        return;
+      } else {
+        // Image found, now check if it is stored as the target type we want 
+        console.log("Image name: ", row.name, " type stored: ", row.type, " origin:", origin, " target: ", target);
+        if (target === row.type) {
+          // Image is present 
+          var nameFile = `${row.name}.${row.type}`
+          var pathFile = __dirname + '/../uploads/' + nameFile;
+
+          if (fs.existsSync(pathFile)) {
+            resolve({ file: nameFile, converted: false })
+          }
+        } else {
+          // We must convert the file
+          var pathFileOrigin = __dirname + "/../uploads/" + `${row.name}.${row.type}`;
+          var pathFileTarget = __dirname + "/../uploads/" + `${row.name}.${target}`;
+          var nameFile = `${row.name}.${target}`
+          var result = await converter(pathFileOrigin, pathFileTarget, origin, target);
+          resolve({ file: nameFile, converted: true });
+        }
+      }
+    });
   })
 }

@@ -21,7 +21,7 @@ var storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const [fileName, fileType] = file.originalname.split(".");
 
-    cb(null, `${fileName}-${req.params.id}.${fileType}`)
+    cb(null, file.originalname)
   }
 })
 const upload = multer({ storage: storage })
@@ -30,7 +30,7 @@ const app = expressAppConfig.getApp();
 const taskController = require(path.join(__dirname, 'controllers/Tasks'));
 const userController = require(path.join(__dirname, 'controllers/Users'));
 const userService = require(path.join(__dirname, 'service/UsersService'));
-const { param, query, validationResult, checkSchema } = require('express-validator');
+const { param, query, validationResult, checkSchema, body } = require('express-validator');
 const passport = require("passport");
 const passportJWT = require("passport-jwt");
 const ExtractJWT = passportJWT.ExtractJwt;
@@ -155,9 +155,9 @@ app.get("/api/tasks/:tid/assignees", param('tid').isInt(), validateMiddleware, p
 
 /* LAB 02 */
 
-app.post("/api/tasks/:id/upload", param('id').isInt(), passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.assignImage);
-app.delete("/api/tasks/:id/upload", param('id').isInt(), passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.deleteAssignedImage);
-
+app.post("/api/tasks/:tid/images", param('tid').isInt(), passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.assignImage);
+app.delete("/api/tasks/:tid/images/:imgid", param('tid').isInt(), param('imgid').isInt(), passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.deleteAssignedImage);
+app.get("/api/tasks/:tid/images/:imgid", taskController.getImageFile)
 
 http.createServer(app).listen(serverPort, function () {
   console.log('Your server is listening on port %d (http://localhost:%d)', serverPort, serverPort);
