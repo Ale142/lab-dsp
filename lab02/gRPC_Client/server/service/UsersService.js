@@ -110,3 +110,32 @@ exports.getUserCreatedTasks = function (owner) {
     })
   })
 }
+
+exports.isOwner = function (userId, taskId) {
+  return new Promise(function (resolve, reject) {
+    db.get("SELECT * FROM tasks WHERE owner = ? AND id = ?", [userId, taskId], (err, row) => {
+      if (err) { console.log(err); reject(err); }
+      else if (row === undefined) {
+        console.log(row);
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    })
+  })
+}
+
+exports.isAssignee = function (userId, taskId) {
+  return new Promise(function (resolve, reject) {
+    db.get("SELECT * FROM assignments WHERE task = ? AND user = ?", [taskId, userId], (err, row) => {
+      if (err) {
+        console.log(err);
+        reject(err);
+      } else if (row === undefined) {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    })
+  })
+}

@@ -180,13 +180,6 @@ module.exports.assignImage = function assignImage(req, res, next) {
     })
 }
 
-module.exports.getAssignedImage = function getAssignedImage(req, res, next) {
-  const user = req.user;
-  const taskId = req.params.id;
-  const fileName = req.body.fileName;
-  const fileType = req.body.fileType;
-}
-
 module.exports.deleteAssignedImage = function deleteAssignedImage(req, res, next) {
   const user = req.user;
   const taskId = req.params.tid;
@@ -204,17 +197,25 @@ module.exports.deleteAssignedImage = function deleteAssignedImage(req, res, next
 module.exports.getImageFile = function getImageFile(req, res, next) {
   const origin = req.query.origin
   const target = req.query.target
+  const user = req.user;
   const imageName = req.query.name
   const taskId = req.params.tid;
   const imgId = req.params.imgid;
   console.log(`Origin ${origin}, Target ${target}, imageName ${imageName}, taskId ${taskId}`);
-  Tasks.getImageFile(taskId, imgId, imageName, origin, target)
+  Tasks.getImageFile(taskId, imgId, user, origin, target)
     .then(function (response) {
-      res.sendFile(response.file, { root: './uploads' })
+      res.sendFile(response.file, { root: './uploads' }, err => {
+        if (err) {
+          console.log(err);
+          res.send(500);
+        }
 
-      if (response.converted)
-        fs.unlinkSync(__dirname + `/../uploads/${response.file}`)
-      // utils.writeJson(res, response);
+        // Delete the converted image after send the file to client
+        if (response.converted)
+          fs.unlinkSync(__dirname + `/../uploads/${response.file}`)
+
+      })
+
     })
     .catch(function (response) {
       utils.writeJson(res, response);

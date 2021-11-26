@@ -19,8 +19,6 @@ var storage = multer.diskStorage({
     cb(null, `./uploads/`)
   },
   filename: function (req, file, cb) {
-    const [fileName, fileType] = file.originalname.split(".");
-
     cb(null, file.originalname)
   }
 })
@@ -155,9 +153,9 @@ app.get("/api/tasks/:tid/assignees", param('tid').isInt(), validateMiddleware, p
 
 /* LAB 02 */
 
-app.post("/api/tasks/:tid/images", param('tid').isInt(), passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.assignImage);
-app.delete("/api/tasks/:tid/images/:imgid", param('tid').isInt(), param('imgid').isInt(), passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.deleteAssignedImage);
-app.get("/api/tasks/:tid/images/:imgid", taskController.getImageFile)
+app.post("/api/tasks/:tid/images", param('tid').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.assignImage);
+app.delete("/api/tasks/:tid/images/:imgid", param('tid').isInt(), param('imgid').isInt(), validateMiddleware, passport.authenticate('jwt', { session: false }), upload.single('image'), taskController.deleteAssignedImage);
+app.get("/api/tasks/:tid/images/:imgid", query('target').isString().notEmpty(), query('origin').isString().notEmpty(), validateMiddleware, passport.authenticate('jwt', { session: false }), taskController.getImageFile)
 
 http.createServer(app).listen(serverPort, function () {
   console.log('Your server is listening on port %d (http://localhost:%d)', serverPort, serverPort);

@@ -346,6 +346,107 @@ paths:
         "500":
           description: Internal server error
       x-swagger-router-controller: Tasks
+  /tasks/:tid/images/:imgid:
+    delete:
+      tags:
+        - tasks
+      summary: Delete the image assigned to the task
+      description: Delete the image with id imgid related to the task tid
+      operationId: deleteAssignedImage
+      parameters:
+        - name: tid
+          in: path
+          description: Id of the task
+          required: true
+          schema:
+            type: number
+        - name: imgid
+          in: path
+          description: Id of the image
+          required: true
+          schema: 
+            type: number
+      responses:
+        "404":
+          description: "Task or image not found"
+          content: {}
+        "204":
+          description: "Successfully deleted"
+          content: {}
+        "500":
+          description: "Internal server error"
+          content: {}
+    get:
+      tags:
+        - tasks
+      summary: Get the image assigned to the task
+      description: Get the image with id imgid related to the task tid
+      operationId: getImageFile
+      parameters:
+      - name: tid
+        in: path
+        description: Id of task
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      - name: imgid
+        in: path
+        description: Id of the image
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: number
+      - name: origin
+        in: query
+        description: Origin type of the image
+        required: true
+        schema:
+          type: string
+      - name: target
+        in: query
+        description: Target type of the image
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "Successfully get the image"
+        "404":
+          description: "Task or image not found"
+        "500":
+          description: "Internal server error"
+  /tasks/:tid/images:
+    post:
+      tags:
+        - tasks
+      summary: Assign image to a task
+      description: Assign to the task with tid the image uploaded in the body
+      operationId: assignImage
+      parameters:
+      - name: tid
+        in: path
+        description: The task to which assign the iamge
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successfully assigned the image
+          content: {}
+        "401":
+          description: Not authorized to assign the image
+          content: {}
+        "404":
+          description: Task not found
+          content: {}
+        "500":
+          description: Internal server error
+      x-swagger-router-controller: Tasks
   /login:
     post:
       tags:

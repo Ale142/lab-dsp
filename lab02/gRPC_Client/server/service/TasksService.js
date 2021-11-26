@@ -3,6 +3,9 @@ const db = require('../db');
 const converter = require('./clientConverter');
 const fs = require('fs')
 var utils = require('../utils/writer.js');
+const User = require("./UsersService");
+
+
 
 /**
  * Assigned the task to a user
@@ -112,6 +115,8 @@ exports.deleteTaskById = function (taskId, userid) {
  **/
 exports.getAssigneeTask = function (taskId, owner) {
   return new Promise(function (resolve, reject) {
+
+
     const sql = "SELECT * FROM tasks t, assignments a, users u WHERE t.id = a.task AND u.id = a.user AND t.id = $taskId AND t.owner = $owner";
     db.all(sql, {
       $taskId: taskId,
@@ -380,50 +385,81 @@ exports.assignImage = function (taskId, owner, fileName, imageType) {
     db.get(sql, [owner, taskId], (err, row) => {
       if (err) {
 
-        reject(err);
+        reject(utils.respondWithCode(500, "Internal error in database while getting task"));
       }
-      else if (row.length === 0 || row === undefined) reject(err);
+      else if (row.length === 0 || row === undefined) reject(utils.respondWithCode(404, `Task ${taskId} not found for the user ${owner}`));
       else {
         // File is saved only with his name
         const fileWithoutType = fileName.split(/(\.(?:jpe?g|png|gif))$/)[0]
         const sql2 = "INSERT INTO images (name, task, type) VALUES (?, ?, ?)";
         db.run(sql2, [fileWithoutType, taskId, imageType], (err) => {
           if (err) {
-            reject(err);
+            reject(utils.respondWithCode(500, "Internal error in database while inserting the image"));
           }
-          resolve(taskId);
+          resolve(utils.respondWithCode(204, "Image  inserted successfully for the task"));
         })
       }
     })
   })
 }
+
+async function checkOwnerAssigneeTask(taskId, userId) {
+  // console.log(`User ${userId} own ${taskId}? `, await User.isOwner(userId, taskId));
+  // console.log(`User ${userId} assignee ${taskId}? `, await User.isAssignee(userId, taskId));
+
+  if (!(await User.isOwner(userId, taskId) || await User.isAssignee(userId, taskId))) {
+    return false
+  }
+  return true;
+}
+
 
 exports.deleteAssignedImage = function (taskId, user, imgId) {
-  return new Promise(function (resolve, reject) {
-    db.get("SELECT * FROM tasks WHERE id = ? AND owner = ?", [taskId, user], (err, row) => {
+  return new Promise(async function (resolve, reject) {
+
+    if (!await checkOwnerAssigneeTask(taskId, user)) reject(utils.respondWithCode(404, `Task ${taskId} is not found for user ${user}`))
+    db.get("SELECT * FROM tasks WHERE id = ? AND owner = ?", [taskId, user], async (err, row) => {
       console.log(row)
       if (err) reject(err);
-      if (row === undefined || row.length === 0) reject({ code: 404, payload: "Task not found" });
+      if (row === undefined || row.length === 0) reject(utils.respondWithCode(404, "Task not found"));
       else {
-        const sql = "DELETE FROM images WHERE task = $taskId AND id = $imgId";
-        db.run(sql, {
-          $taskId: taskId,
-          $imgId: imgId,
-        }, function (err) {
+
+        db.get("SELECT name, type FROM images WHERE id = ?", [imgId], (err, row) => {
           if (err) {
-            console.log(err);
-            reject(err)
+            reject(utils.respondWithCode(500, "Database error while looking for image"));
           }
-          else
-            resolve(true);
+          else if (row === undefined) {
+            reject(utils.respondWithCode(404, "Image not found"))
+          } else {
+            const name = row.name, type = row.type;
+            const sql = "DELETE FROM images WHERE task = $taskId AND id = $imgId";
+            db.run(sql, {
+              $taskId: taskId,
+              $imgId: imgId,
+            }, function (err) {
+              if (err) {
+                console.log(err);
+                reject(utils.respondWithCode(500, "Error while deleting"))
+              }
+              else {
+                fs.unlinkSync(__dirname + `/../uploads/${name}.${type}`);
+                resolve(utils.respondWithCode(204, "Successfully deleted"));
+              }
+            })
+
+          }
         })
       }
     })
   })
 }
 
-exports.getImageFile = function (taskId, imgId, imageName, origin, target) {
-  return new Promise(function (resolve, reject) {
+
+
+exports.getImageFile = function (taskId, imgId, user, origin, target) {
+  return new Promise(async function (resolve, reject) {
+    // console.log(await checkOwnerAssigneeTask(taskId, user))
+    if (!await checkOwnerAssigneeTask(taskId, user)) reject(utils.respondWithCode(404, `Task ${taskId} is not found for user ${user}`))
     const sql = "SELECT * FROM images WHERE task = ? AND id = ?";
     db.get(sql, [taskId, imgId], async (err, row) => {
       if (err) {
