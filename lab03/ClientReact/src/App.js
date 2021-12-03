@@ -229,7 +229,8 @@ const Main = () => {
     }
   }
 
-  const selectTask = (task) => {
+  const selectTask = (task, flag) => {
+    setSelectedTask(task);
     API.selectTask(task)
       .then(() => setDirty(true))
       .catch(e => handleErrors(e))
@@ -306,7 +307,7 @@ const Main = () => {
   const handleLogOut = async () => {
     await API.logOut()
     // clean up everything
-    if (loggedIn)
+    if (loggedIn && user !== null)
       ws.send(JSON.stringify(new ws_message('logout', user.id, user.name)))
     setLoggedIn(false);
     setOnlineList([])
@@ -385,7 +386,7 @@ const Main = () => {
         <Route path={["/list/:filter"]}>
           {loggedIn ?
             <Row className="vh-100 below-nav">
-              <TaskMgr taskList={taskList} filter={activeFilter} onDelete={deleteTask} onEdit={handleEdit} onComplete={completeTask} onCheck={selectTask} onSelect={handleSelectFilter} refreshTasks={refreshTasks} onlineList={onlineList}></TaskMgr>
+              <TaskMgr taskList={taskList} filter={activeFilter} onDelete={deleteTask} onEdit={handleEdit} onComplete={completeTask} onCheck={selectTask} selectedTask={selectTask} onSelect={handleSelectFilter} refreshTasks={refreshTasks} onlineList={onlineList}></TaskMgr>
               <Button variant="success" size="lg" className="fixed-right-bottom" onClick={() => setSelectedTask(MODAL.ADD)}>+</Button>
               {(selectedTask !== MODAL.CLOSED) && <ModalForm task={findTask(selectedTask)} onSave={handleSaveOrUpdate} onClose={handleClose}></ModalForm>}
             </Row> : <Redirect to="/login" />
@@ -404,7 +405,7 @@ const Main = () => {
 
 const TaskMgr = (props) => {
 
-  const { taskList, filter, onDelete, onEdit, onComplete, onCheck, onSelect, refreshTasks, onlineList } = props;
+  const { taskList, filter, onDelete, onEdit, onComplete, onCheck, onSelect, refreshTasks, onlineList, selectedTask } = props;
 
 
   // ** FILTER DEFINITIONS **
@@ -426,6 +427,7 @@ const TaskMgr = (props) => {
         <h1 className="pb-3">Filter: <small className="text-muted">{activeFilter}</small></h1>
         <ContentList
           tasks={taskList}
+          selectedTask={selectedTask}
           onDelete={onDelete} onEdit={onEdit} onCheck={onCheck} onComplete={onComplete} filter={activeFilter} getTasks={refreshTasks}
         />
       </Col>

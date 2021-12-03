@@ -31,16 +31,16 @@ const TaskRowData = (props) => {
   return (
     <>
       <div className="flex-fill m-auto">
-          <Form.Group className="m-0" controlId="formBasicCheckbox">
-            <Form.Check type="checkbox">
-            { (filter == 'assigned')?
-              <Form.Check.Input type="radio" checked={task.active} onChange={ (ev) => onCheck(ev.target.checked)} />
+        <Form.Group className="m-0" controlId="formBasicCheckbox">
+          <Form.Check type="checkbox">
+            {(filter === 'assigned') ?
+              <Form.Check.Input type="radio" checked={task.active} onChange={(ev) => onCheck(ev.target.checked)} />
               : null
             }
-              <Form.Check.Label className={labelClassName} >{task.description}</Form.Check.Label>
-            </Form.Check>
-          </Form.Group>
-        </div>
+            <Form.Check.Label className={labelClassName} >{task.description}</Form.Check.Label>
+          </Form.Check>
+        </Form.Group>
+      </div>
       <div className="flex-fill mx-2 m-auto"><PersonSquare className={task.private ? 'invisible' : ''} /></div>
       <div className="flex-fill m-auto"><small>{formatDeadline(task.deadline)}</small></div>
     </>
@@ -52,13 +52,13 @@ const TaskRowControl = (props) => {
   return (
     <>
       <div className="ml-10">
-        { (filter == 'owned') ? 
-            [
-              <Button variant="link" className="shadow-none" onClick={onEdit}><PencilSquare /></Button>,
-              <Button variant="link" className="shadow-none" onClick={onDelete}><Trash /></Button>
-            ]
-          : 
-          task.completed ? 
+        {(filter == 'owned') ?
+          [
+            <Button variant="link" className="shadow-none" onClick={onEdit}><PencilSquare /></Button>,
+            <Button variant="link" className="shadow-none" onClick={onDelete}><Trash /></Button>
+          ]
+          :
+          task.completed ?
             <Button variant="success" className="shadow-none" disabled>Completed</Button> :
             <Button variant="success" className="shadow-none" onClick={onComplete}>Complete</Button>
         }
@@ -69,12 +69,12 @@ const TaskRowControl = (props) => {
 
 
 const ContentList = (props) => {
-  const { tasks, onDelete, onEdit, onCheck, onComplete, filter, getTasks } = props;
+  const { tasks, onDelete, onEdit, onCheck, onComplete, filter, getTasks, selectedTask } = props;
 
 
   // handle change event
   const handlePageChange = pageNumber => {
-      getTasks(filter, pageNumber);
+    getTasks(filter, pageNumber);
   }
 
 
@@ -85,22 +85,22 @@ const ContentList = (props) => {
           tasks.map(t => {
             return (
               <ListGroup.Item as="li" key={t.id} className="d-flex w-100 justify-content-between">
-                  <TaskRowData task={t} onCheck={ (flag) => onCheck(t, flag)} filter={filter} />
-                  <TaskRowControl task={t} onDelete={() => onDelete(t)} onEdit={() => onEdit(t)} onComplete ={() => onComplete(t)} filter={filter}/>
+                <TaskRowData task={t} onCheck={(flag) => onCheck(t, flag)} filter={filter} />
+                <TaskRowControl task={t} onDelete={() => onDelete(t)} onEdit={() => onEdit(t)} onComplete={() => onComplete(t)} filter={filter} />
               </ListGroup.Item>
             );
           })
         }
       </ListGroup>
-      <Pagination 
-          itemClass="page-item" // add it for bootstrap 4
-          linkClass="page-link" // add it for bootstrap 4
-          activePage={localStorage.getItem("currentPage")}
-          itemsCountPerPage={localStorage.getItem("totalItems")/localStorage.getItem("totalPages")}
-          totalItemsCount={localStorage.getItem("totalItems")}
-          pageRangeDisplayed={10}
-          onChange={handlePageChange}
-          pageSize ={localStorage.getItem("totalPages")}
+      <Pagination
+        itemClass="page-item" // add it for bootstrap 4
+        linkClass="page-link" // add it for bootstrap 4
+        activePage={localStorage.getItem("currentPage")}
+        itemsCountPerPage={localStorage.getItem("totalItems") / localStorage.getItem("totalPages")}
+        totalItemsCount={localStorage.getItem("totalItems")}
+        pageRangeDisplayed={10}
+        onChange={handlePageChange}
+        pageSize={localStorage.getItem("totalPages")}
       />
     </>
   )

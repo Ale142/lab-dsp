@@ -25,7 +25,7 @@ const formatDeadline = (d) => {
 }
 
 const TaskRowData = (props) => {
-  const { task, onCheck } = props;
+  const { task, onCheck, selectedTask } = props;
   const labelClassName = `${task.important ? 'important' : ''} ${task.completed ? 'completed' : ''}`;
 
   return (
@@ -33,7 +33,7 @@ const TaskRowData = (props) => {
       <div className="flex-fill m-auto">
         <Form.Group className="m-0" controlId="formBasicCheckbox">
           <Form.Check type="checkbox">
-            <Form.Check.Label className={labelClassName} >{task.description}</Form.Check.Label>
+            <Form.Check.Label onChange={() => onCheck(task.id)} className={labelClassName} >{task.description}</Form.Check.Label>
           </Form.Check>
         </Form.Group></div>
       <div className="flex-fill mx-2 m-auto"><PersonSquare className={task.private ? 'invisible' : ''} /></div>
@@ -49,7 +49,7 @@ const PublicList = (props) => {
 
   // handle change event
   const handlePageChange = pageNumber => {
-      getTasks(pageNumber);
+    getTasks(pageNumber);
   }
 
 
@@ -60,21 +60,21 @@ const PublicList = (props) => {
           tasks.map(t => {
             return (
               <ListGroup.Item as="li" key={t.id} className="d-flex w-100 justify-content-between">
-                  <TaskRowData task={t} />
+                <TaskRowData task={t} />
               </ListGroup.Item>
             );
           })
         }
       </ListGroup>
-      <Pagination 
-          itemClass="page-item" // add it for bootstrap 4
-          linkClass="page-link" // add it for bootstrap 4
-          activePage={localStorage.getItem("currentPage")}
-          itemsCountPerPage={localStorage.getItem("totalItems")/localStorage.getItem("totalPages")}
-          totalItemsCount={localStorage.getItem("totalItems")}
-          pageRangeDisplayed={10}
-          onChange={handlePageChange}
-          pageSize ={localStorage.getItem("totalPages")}
+      <Pagination
+        itemClass="page-item" // add it for bootstrap 4
+        linkClass="page-link" // add it for bootstrap 4
+        activePage={localStorage.getItem("currentPage")}
+        itemsCountPerPage={localStorage.getItem("totalItems") / localStorage.getItem("totalPages")}
+        totalItemsCount={localStorage.getItem("totalItems")}
+        pageRangeDisplayed={10}
+        onChange={handlePageChange}
+        pageSize={localStorage.getItem("totalPages")}
       />
     </>
   )
