@@ -3,7 +3,7 @@
 const sqlite = require('sqlite3').verbose();
 const path = require('path');
 
-const DBSOURCE = path.join(__dirname, '../database/databaseV2.db');
+const DBSOURCE = path.join(__dirname, '../database/databaseV4.db');
 console.log(DBSOURCE);
 
 const db = new sqlite.Database(DBSOURCE, (err) => {
@@ -13,8 +13,8 @@ const db = new sqlite.Database(DBSOURCE, (err) => {
         throw err;
     }
 
-    db.exec('PRAGMA foreign_keys = ON;', function(error)  {
-        if (error){
+    db.exec('PRAGMA foreign_keys = ON;', function (error) {
+        if (error) {
             console.error("Pragma statement didn't work.")
         }
     });

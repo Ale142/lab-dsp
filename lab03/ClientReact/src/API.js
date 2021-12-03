@@ -15,10 +15,10 @@ function getJson(httpResponsePromise) {
       .then((response) => {
         if (response.ok) {
 
-         // always return {} from server, never null or non json, otherwise it will fail
-         response.json()
-            .then( json => resolve(json) )
-            .catch( err => reject({ error: "Cannot parse server response" }))
+          // always return {} from server, never null or non json, otherwise it will fail
+          response.json()
+            .then(json => resolve(json))
+            .catch(err => reject({ error: "Cannot parse server response" }))
 
         } else {
           // analyze the cause of error
@@ -27,88 +27,88 @@ function getJson(httpResponsePromise) {
             .catch(err => reject({ error: "Cannot parse server response" })) // something else
         }
       })
-      .catch(err => reject({ error: "Cannot communicate"  })) // connection error
+      .catch(err => reject({ error: "Cannot communicate" })) // connection error
   });
 }
 
 const getTasks = async (filter, page) => {
-  
 
-let url =  filter === 'owned'
-  ? BASEURL + '/users/'+ localStorage.getItem('userId') + '/tasks/created'
-  : BASEURL + '/users/'+ localStorage.getItem('userId') + '/tasks/assigned'
 
-if (page) {
-  url += "?pageNo=" + page;
-}  
+  let url = filter === 'owned'
+    ? BASEURL + '/users/' + localStorage.getItem('userId') + '/tasks/created'
+    : BASEURL + '/users/' + localStorage.getItem('userId') + '/tasks/assigned'
+
+  if (page) {
+    url += "?pageNo=" + page;
+  }
   return getJson(
     fetch(url)
-  ).then( json => {
-    
-    localStorage.setItem('totalPages',  json.totalPages);
+  ).then(json => {
+
+    localStorage.setItem('totalPages', json.totalPages);
     localStorage.setItem('currentPage', json.currentPage);
-    localStorage.setItem('totalItems',  json.totalItems);
+    localStorage.setItem('totalItems', json.totalItems);
     const tasksJson = json.tasks;
     return tasksJson.map((task) => Object.assign({}, task, { deadline: task.deadline && dayjs(task.deadline) }))
-    
+
   })
 }
 
 
 const getPublicTasks = async (page) => {
-  
 
-  let url =  BASEURL + '/tasks/public';
+
+  let url = BASEURL + '/tasks/public';
   if (page) {
     url += "?pageNo=" + page;
-  } 
- 
-  return getJson(
-      fetch(url)
-    ).then( json => {
-      
-      localStorage.setItem('totalPages',  json.totalPages);
-      localStorage.setItem('currentPage', json.currentPage);
-      localStorage.setItem('totalItems',  json.totalItems);
-      const tasksJson = json.tasks;
-      return tasksJson.map((task) => Object.assign({}, task, { deadline: task.deadline && dayjs(task.deadline) }))
-    })
-
   }
+
+  return getJson(
+    fetch(url)
+  ).then(json => {
+
+    localStorage.setItem('totalPages', json.totalPages);
+    localStorage.setItem('currentPage', json.currentPage);
+    localStorage.setItem('totalItems', json.totalItems);
+    const tasksJson = json.tasks;
+    return tasksJson.map((task) => Object.assign({}, task, { deadline: task.deadline && dayjs(task.deadline) }))
+  })
+
+}
 
 
 async function getAllOwnedTasks() {
 
-    let url =  BASEURL + '/users/'+ localStorage.getItem('userId') + '/tasks/created';
-    let allTasks = [];
-    let finished = false;
+  let url = BASEURL + '/users/' + localStorage.getItem('userId') + '/tasks/created';
+  let allTasks = [];
+  let finished = false;
 
-    while(!finished){
-        const response = await fetch(url);
-        const responseJson = await response.json();
-        const tasksJson = responseJson.tasks;
+  while (!finished) {
+    const response = await fetch(url);
+    const responseJson = await response.json();
+    const tasksJson = responseJson.tasks;
 
-        if (response.ok) {
-            tasksJson.forEach(
-                (t) => {
-                    let task = new Task(t.id, t.description, t.important, t.privateTask, t.deadline, t.project, t.completed);
-                    allTasks.push(task);
-                }
-            );
-            if(responseJson.next == undefined){
-                finished = true;
-            } else {
-                url = responseJson.next;
-            }
-
-        } else {
-            let err = { status: response.status, errObj: tasksJson };
-            throw err; // An object with the error coming from the server
+    if (response.ok) {
+      tasksJson.forEach(
+        (t) => {
+          let task = new Task(t.id, t.description, t.important, t.privateTask, t.deadline, t.project, t.completed);
+          allTasks.push(task);
         }
+      );
+      if (responseJson.next == undefined) {
+        finished = true;
+      } else {
+        url = responseJson.next;
+      }
 
+    } else {
+      let err = { status: response.status, errObj: tasksJson };
+      throw err; // An object with the error coming from the server
     }
 
-    return allTasks;
+  }
+
+  return allTasks;
 
 }
 
@@ -119,44 +119,46 @@ function addTask(task) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ...task, completed: false})
+      body: JSON.stringify({ ...task, completed: false })
     })
   )
 }
 
 function updateTask(task) {
   return fetch(BASEURL + "/tasks/" + task.id, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(task)
-    }
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(task)
+  }
   )
 }
 
 async function deleteTask(task) {
-  const response = await fetch(BASEURL + "/tasks/" + task.id, {method: 'DELETE'});
-  if(!response.ok){
+  const response = await fetch(BASEURL + "/tasks/" + task.id, { method: 'DELETE' });
+  if (!response.ok) {
     let err = { status: response.status, errObj: response.json };
-    throw err; 
+    throw err;
   }
 }
 
 async function completeTask(task) {
-  const response = await fetch(BASEURL + "/tasks/" + task.id + '/completion', {method: 'PUT'});
-  if(!response.ok){
+  const response = await fetch(BASEURL + "/tasks/" + task.id + '/completion', { method: 'PUT' });
+  if (!response.ok) {
     let err = { status: response.status, errObj: response.json };
-    throw err; 
+    throw err;
   }
 }
 
 async function selectTask(task) {
-  const response = await fetch(BASEURL + "/users/" + localStorage.getItem('userId') + '/selection', {method: 'PUT', headers: {'Content-Type': 'application/json',},
-                    body: JSON.stringify(task)});
-  if(!response.ok){
+  const response = await fetch(BASEURL + "/users/" + localStorage.getItem('userId') + '/selection', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json', },
+    body: JSON.stringify(task)
+  });
+  if (!response.ok) {
     let err = { status: response.status, errObj: response.json };
-    throw err; 
+    throw err;
   }
 }
 
@@ -168,7 +170,7 @@ async function logIn(credentials) {
     },
     body: JSON.stringify(credentials),
   });
-  if(response.ok) {
+  if (response.ok) {
     const user = await response.json();
     localStorage.setItem('userId', user.id);
     localStorage.setItem('username', user.name);
@@ -180,21 +182,23 @@ async function logIn(credentials) {
       const errDetail = await response.json();
       throw errDetail.message;
     }
-    catch(err) {
+    catch (err) {
       throw err;
     }
   }
 }
 
 async function logOut() {
-  await fetch('/api/users/authenticator?type=logout', { method: 'POST',headers: {'Content-Type': 'application/json',},
-          body: JSON.stringify({ email: localStorage.getItem('email'), password:  localStorage.getItem('password') }), });
+  await fetch('/api/users/authenticator?type=logout', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', },
+    body: JSON.stringify({ email: localStorage.getItem('email'), password: localStorage.getItem('password') }),
+  });
 }
 
 async function getUserInfo() {
   //const response = await fetch(BASEURL + '/sessions/current');
   //const userInfo = await response.json();
-  if(localStorage.getItem('userId')){
+  if (localStorage.getItem('userId')) {
     return true
   } else {
     return false;
@@ -213,54 +217,82 @@ async function getUsers() {
   const response = await fetch(BASEURL + url);
   const responseJson = await response.json();
   if (response.ok) {
-      return responseJson.map((u) => new User(u.id, u.name, u.email));
+    return responseJson.map((u) => new User(u.id, u.name, u.email));
   } else {
-      let err = { status: response.status, errObj: responseJson };
-      throw err; // An object with the error coming from the server
+    let err = { status: response.status, errObj: responseJson };
+    throw err; // An object with the error coming from the server
   }
 
 }
 
-async function assignTask(userId,taskId) {
+async function getActiveTask(userId) {
+  let url = `/users/${userId}/selection/`;
+  const response = await fetch(BASEURL + url);
+  const responseJson = await response.json();
+  console.log("ResponseJson (getActiveTask):", responseJson);
+  if (response.ok) {
+    return { taskId: responseJson.taskId, taskName: responseJson.taskName }
+  } else {
+    let err = { status: response.status, errObj: responseJson };
+    throw err;
+  }
+}
+
+async function setActiveTask(userId, taskId) {
+  let url = `/users/${userId}/selection/${taskId}`;
+  const response = await fetch(BASEURL + url, {
+    method: "PUT"
+  });
+  const responseJson = await response.json();
+  console.log("ResponseJson (setActiveTask:", responseJson);
+  if (response.ok) {
+    return { status: true, msg: "updated" }
+  } else {
+    let err = { status: response.status, errObj: responseJson };
+    throw err;
+  }
+}
+
+async function assignTask(userId, taskId) {
   return new Promise((resolve, reject) => {
-      //let userId = Number( localStorage.getItem("user"))
-      fetch(BASEURL + "/tasks/"+taskId+"/assignees", {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ id: userId, email:localStorage.getItem("email"), name:localStorage.getItem("name")}),
-      }).then((response) => {
-          if (response.ok) {
-             resolve(null)
-          } else {
-              // analyze the cause of error
-              response.json()
-                  .then((obj) => { reject(obj); }) // error msg in the response body
-                  .catch((err) => { reject({ errors: [{ param: "Application", msg: "Cannot parse server response" }] }) }); // something else
-          }
-      }).catch((err) => { reject({ errors: [{ param: "Server", msg: "Cannot communicate" }] }) }); // connection errors
+    //let userId = Number( localStorage.getItem("user"))
+    fetch(BASEURL + "/tasks/" + taskId + "/assignees", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: userId, email: localStorage.getItem("email"), name: localStorage.getItem("name") }),
+    }).then((response) => {
+      if (response.ok) {
+        resolve(null)
+      } else {
+        // analyze the cause of error
+        response.json()
+          .then((obj) => { reject(obj); }) // error msg in the response body
+          .catch((err) => { reject({ errors: [{ param: "Application", msg: "Cannot parse server response" }] }) }); // something else
+      }
+    }).catch((err) => { reject({ errors: [{ param: "Server", msg: "Cannot communicate" }] }) }); // connection errors
   });
 }
 
-async function removeAssignTask(userId,taskId) {
+async function removeAssignTask(userId, taskId) {
   return new Promise((resolve, reject) => {
-      //let userId = Number( localStorage.getItem("user"))
-      fetch(BASEURL + "/tasks/"+taskId+"/assignees/"+userId, {
-          method: 'DELETE'
-      }).then((response) => {
-          if (response.ok) {
-             resolve(null)
-          } else {
-              // analyze the cause of error
-              response.json()
-                  .then((obj) => { reject(obj); }) // error msg in the response body
-                  .catch((err) => { reject({ errors: [{ param: "Application", msg: "Cannot parse server response" }] }) }); // something else
-          }
-      }).catch((err) => { reject({ errors: [{ param: "Server", msg: "Cannot communicate" }] }) }); // connection errors
+    //let userId = Number( localStorage.getItem("user"))
+    fetch(BASEURL + "/tasks/" + taskId + "/assignees/" + userId, {
+      method: 'DELETE'
+    }).then((response) => {
+      if (response.ok) {
+        resolve(null)
+      } else {
+        // analyze the cause of error
+        response.json()
+          .then((obj) => { reject(obj); }) // error msg in the response body
+          .catch((err) => { reject({ errors: [{ param: "Application", msg: "Cannot parse server response" }] }) }); // something else
+      }
+    }).catch((err) => { reject({ errors: [{ param: "Server", msg: "Cannot communicate" }] }) }); // connection errors
   });
 }
 
-const API = { addTask, getTasks, getPublicTasks, getAllOwnedTasks, updateTask, deleteTask, selectTask, logIn, logOut, getUserInfo, getUsers, assignTask, removeAssignTask, completeTask }
+const API = { addTask, getTasks, getPublicTasks, getAllOwnedTasks, updateTask, deleteTask, selectTask, logIn, logOut, getUserInfo, getUsers, assignTask, removeAssignTask, completeTask, getActiveTask, setActiveTask }
 export default API;
 

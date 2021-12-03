@@ -58,6 +58,8 @@ const Main = () => {
   const [loggedIn, setLoggedIn] = useState(false); // at the beginning, no user is logged in
   const [user, setUser] = useState(null);
 
+  const [activeTask, setActiveTask] = useState(null);
+
   // active filter is read from the current url
   const match = useRouteMatch('/list/:filter');
   const activeFilter = (match && match.params && match.params.filter) ? match.params.filter : 'owned';
@@ -236,6 +238,18 @@ const Main = () => {
       .catch(e => handleErrors(e))
   }
 
+  const changeActiveTask = async task => {
+    try {
+      await API.setActiveTask(user.id, task.id);
+
+      setActiveTask({ taskId: task.id, taskName: task.description });
+
+
+      setOnlineList(users => users.map(u => u.userId === user.id ? ({ ...u, taskId: task.id, taskName: task.description }) : u))
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
     if (loggedIn && dirty) {
@@ -290,11 +304,13 @@ const Main = () => {
   const doLogIn = async (credentials) => {
     try {
       const user = await API.logIn(credentials);
-
+      const activeTask = await API.getActiveTask(user.id);
       setUser(user);
+      setActiveTask(activeTask);
 
       // Send the user through WebSocket channel
-      ws.send(JSON.stringify(new ws_message('login', user.id, user.name)));
+      ws.send(JSON.stringify(new ws_message('login', user.id, user.name, activeTask.taskId ?? '', activeTask.taskName ?? '')));
+
 
       setLoggedIn(true);
     }
@@ -386,7 +402,7 @@ const Main = () => {
         <Route path={["/list/:filter"]}>
           {loggedIn ?
             <Row className="vh-100 below-nav">
-              <TaskMgr taskList={taskList} filter={activeFilter} onDelete={deleteTask} onEdit={handleEdit} onComplete={completeTask} onCheck={selectTask} selectedTask={selectTask} onSelect={handleSelectFilter} refreshTasks={refreshTasks} onlineList={onlineList}></TaskMgr>
+              <TaskMgr taskList={taskList} filter={activeFilter} onDelete={deleteTask} onEdit={handleEdit} onComplete={completeTask} onCheck={changeActiveTask} activeTask={activeTask} onSelect={handleSelectFilter} refreshTasks={refreshTasks} onlineList={onlineList}></TaskMgr>
               <Button variant="success" size="lg" className="fixed-right-bottom" onClick={() => setSelectedTask(MODAL.ADD)}>+</Button>
               {(selectedTask !== MODAL.CLOSED) && <ModalForm task={findTask(selectedTask)} onSave={handleSaveOrUpdate} onClose={handleClose}></ModalForm>}
             </Row> : <Redirect to="/login" />
@@ -405,7 +421,7 @@ const Main = () => {
 
 const TaskMgr = (props) => {
 
-  const { taskList, filter, onDelete, onEdit, onComplete, onCheck, onSelect, refreshTasks, onlineList, selectedTask } = props;
+  const { taskList, filter, onDelete, onEdit, onComplete, onCheck, onSelect, refreshTasks, onlineList, activeTask } = props;
 
 
   // ** FILTER DEFINITIONS **
@@ -427,7 +443,7 @@ const TaskMgr = (props) => {
         <h1 className="pb-3">Filter: <small className="text-muted">{activeFilter}</small></h1>
         <ContentList
           tasks={taskList}
-          selectedTask={selectedTask}
+          activeTask={activeTask}
           onDelete={onDelete} onEdit={onEdit} onCheck={onCheck} onComplete={onComplete} filter={activeFilter} getTasks={refreshTasks}
         />
       </Col>

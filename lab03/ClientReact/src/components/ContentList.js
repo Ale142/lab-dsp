@@ -25,7 +25,7 @@ const formatDeadline = (d) => {
 }
 
 const TaskRowData = (props) => {
-  const { task, onCheck, filter } = props;
+  const { task, onCheck, filter, activeTask } = props;
   const labelClassName = `${task.important ? 'important' : ''} ${task.completed ? 'completed' : ''}`;
 
   return (
@@ -34,7 +34,7 @@ const TaskRowData = (props) => {
         <Form.Group className="m-0" controlId="formBasicCheckbox">
           <Form.Check type="checkbox">
             {(filter === 'assigned') ?
-              <Form.Check.Input type="radio" checked={task.active} onChange={(ev) => onCheck(ev.target.checked)} />
+              <Form.Check.Input type="radio" checked={activeTask && task.id === activeTask.taskId} onChange={(ev) => onCheck(ev.target.checked)} />
               : null
             }
             <Form.Check.Label className={labelClassName} >{task.description}</Form.Check.Label>
@@ -69,7 +69,7 @@ const TaskRowControl = (props) => {
 
 
 const ContentList = (props) => {
-  const { tasks, onDelete, onEdit, onCheck, onComplete, filter, getTasks, selectedTask } = props;
+  const { tasks, onDelete, onEdit, onCheck, onComplete, filter, getTasks, activeTask } = props;
 
 
   // handle change event
@@ -85,7 +85,7 @@ const ContentList = (props) => {
           tasks.map(t => {
             return (
               <ListGroup.Item as="li" key={t.id} className="d-flex w-100 justify-content-between">
-                <TaskRowData task={t} onCheck={(flag) => onCheck(t, flag)} filter={filter} />
+                <TaskRowData task={t} onCheck={() => onCheck(t)} filter={filter} activeTask={activeTask} />
                 <TaskRowControl task={t} onDelete={() => onDelete(t)} onEdit={() => onEdit(t)} onComplete={() => onComplete(t)} filter={filter} />
               </ListGroup.Item>
             );

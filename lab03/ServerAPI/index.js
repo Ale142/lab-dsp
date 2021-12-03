@@ -31,22 +31,21 @@ var validate = validator.validate;
 //Set authentication middleware
 app.use(passport.initialize());
 
-var cookieExtractor = function(req) {
+var cookieExtractor = function (req) {
     var token = null;
-    if (req && req.cookies)
-    {
+    if (req && req.cookies) {
         token = req.cookies['jwt'];
     }
     return token;
-  };
-  
+};
+
 var JwtStrategy = require('passport-jwt').Strategy;
 var opts = {}
 opts.jwtFromRequest = cookieExtractor;
 opts.secretOrKey = '6xvL4xkAAbG49hcXf5GIYSvkDICiUAR6EdR5dLdwW7hMzUjjMUe9t6M5kSAYxsvX';
-passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
+passport.use(new JwtStrategy(opts, function (jwt_payload, done) {
     return done(null, jwt_payload.user);
-   })
+})
 );
 
 
@@ -68,15 +67,19 @@ app.get('/api/users/:userId', passport.authenticate('jwt', { session: false }), 
 app.get('/api/users/:userId/tasks/created', passport.authenticate('jwt', { session: false }), taskController.getOwnedTasks);
 app.get('/api/users/:userId/tasks/assigned', passport.authenticate('jwt', { session: false }), taskController.getAssignedTasks);
 
+
+app.get("/api/users/:userId/selection/", passport.authenticate("jwt", { session: false }), userController.getActiveTask);
+app.put("/api/users/:userId/selection/:taskId/", passport.authenticate("jwt", { session: false }), userController.setActiveTask);
+
 // Error handlers for validation and authentication errors
 
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
     if (err instanceof ValidationError) {
         res.status(400).send(err);
     } else next(err);
 });
 
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
     if (err.name === 'UnauthorizedError') {
         var authErrorObj = { errors: [{ 'param': 'Server', 'msg': 'Authorization error' }] };
         res.status(401).json(authErrorObj);
@@ -85,7 +88,7 @@ app.use(function(err, req, res, next) {
 
 
 // Initialize the Swagger middleware
-http.createServer(app).listen(serverPort, function() {
+http.createServer(app).listen(serverPort, function () {
     console.log('Your server is listening on port %d (http://localhost:%d)', serverPort, serverPort);
     console.log('Swagger-ui is available on http://localhost:%d/docs', serverPort);
 });
