@@ -109,6 +109,9 @@ const Main = () => {
 
             setOnlineList(online => online.filter(user => user.userId !== message.userId));
             break;
+          case 'update':
+            setOnlineList(users => users.map(u => message.userId === u.userId ? ({ ...u, taskId: message.taskId, taskName: message.taskName }) : u))
+            break;
           default:
             break;
         }
@@ -244,8 +247,11 @@ const Main = () => {
 
       setActiveTask({ taskId: task.id, taskName: task.description });
 
-
       setOnlineList(users => users.map(u => u.userId === user.id ? ({ ...u, taskId: task.id, taskName: task.description }) : u))
+
+      // Send update message to WebSocket
+      ws.send(JSON.stringify(new ws_message('update', user.id, user.name, task.id, task.description)));
+
     } catch (error) {
       console.log(error);
     }
@@ -309,7 +315,7 @@ const Main = () => {
       setActiveTask(activeTask);
 
       // Send the user through WebSocket channel
-      ws.send(JSON.stringify(new ws_message('login', user.id, user.name, activeTask.taskId ?? '', activeTask.taskName ?? '')));
+      ws.send(JSON.stringify(new ws_message('login', user.id, user.name, activeTask.taskId, activeTask.taskName)));
 
 
       setLoggedIn(true);

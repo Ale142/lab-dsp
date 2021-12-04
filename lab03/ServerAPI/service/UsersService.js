@@ -91,8 +91,8 @@ exports.getActiveTask = function (userId) {
                 reject(err);
             } else {
                 console.log(row);
-                if (row.length === 0)
-                    resolve(undefined);
+                if (row === undefined || row.length === 0)
+                    resolve({ taskId: undefined, taskName: undefined });
                 else {
                     resolve({ taskId: row.id, taskName: row.description })
                 }

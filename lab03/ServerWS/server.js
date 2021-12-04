@@ -52,6 +52,10 @@ webSocketServer.on('connection', webSocket => {
                 // console.log("loggedUser after Logout:", loggedUser)
                 // broadcast(JSON.stringify(parsedMessage))
                 break;
+
+            case 'update':
+                loggedUserConnections.forEach(user => user.connection.send(JSON.stringify(parsedMessage)));
+                break;
         }
 
     });
