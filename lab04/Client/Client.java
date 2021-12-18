@@ -15,6 +15,10 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -88,10 +92,11 @@ public class Client {
 
         byte[] data = baos.toByteArray();
         ByteArrayInputStream bis = new ByteArrayInputStream(data);
-        BufferedImage imageToCreate = ImageIO.read(bis);
+        // BufferedImage imageToCreate = ImageIO.read(bis);
 
-        ImageIO.write(imageToCreate, targetType, new File(imagePath.split(Pattern.quote("."))[0] + "." + targetType));
-
+        // ImageIO.write(imageToCreate, targetType, new
+        // File(imagePath.split(Pattern.quote("."))[0] + "." + targetType));
+        Files.write(Path.of("./images/output." + targetType), data, StandardOpenOption.CREATE);
         System.out.println("File created");
 
         out.close();
