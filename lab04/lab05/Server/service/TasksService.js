@@ -3,8 +3,8 @@
 const Task = require('../components/task');
 const db = require('../components/db');
 var constants = require('../utils/constants.js');
-
-
+var serverMqtt = require('../components/mqtt.js')
+var MQTTMessage = require('../components/mqtt_message.js')
 /**
  * Create a new task
  *
@@ -14,10 +14,10 @@ var constants = require('../utils/constants.js');
  * Output:
  * - the created task
  **/
-exports.addTask = function(task, owner) {
+exports.addTask = function (task, owner) {
     return new Promise((resolve, reject) => {
         const sql = 'INSERT INTO tasks(description, important, private, project, deadline, completed, owner) VALUES(?,?,?,?,?,?, ?)';
-        db.run(sql, [task.description, task.important, task.private, task.project, task.deadline, task.completed, owner], function(err) {
+        db.run(sql, [task.description, task.important, task.private, task.project, task.deadline, task.completed, owner], function (err) {
             if (err) {
                 reject(err);
             } else {
@@ -38,7 +38,7 @@ exports.addTask = function(task, owner) {
  * Output:
  * - no response expected for this operation
  **/
-exports.deleteTask = function(taskId, owner) {
+exports.deleteTask = function (taskId, owner) {
     return new Promise((resolve, reject) => {
         const sql1 = "SELECT owner FROM tasks t WHERE t.id = ?";
         db.all(sql1, [taskId], (err, rows) => {
@@ -46,7 +46,7 @@ exports.deleteTask = function(taskId, owner) {
                 reject(err);
             else if (rows.length === 0)
                 reject(404);
-            else if(owner != rows[0].owner) {
+            else if (owner != rows[0].owner) {
                 reject(403);
             }
             else {
@@ -79,7 +79,7 @@ exports.deleteTask = function(taskId, owner) {
  * - list of the public tasks
  * 
  **/
-exports.getPublicTasks = function(req) {
+exports.getPublicTasks = function (req) {
     return new Promise((resolve, reject) => {
 
         var sql = "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed,c.total_rows FROM tasks t, (SELECT count(*) total_rows FROM tasks l WHERE l.private=0) c WHERE  t.private = 0 "
@@ -105,7 +105,7 @@ exports.getPublicTasks = function(req) {
  * - total number of public tasks
  * 
  **/
-exports.getPublicTasksTotal = function() {
+exports.getPublicTasksTotal = function () {
     return new Promise((resolve, reject) => {
         var sqlNumOfTasks = "SELECT count(*) total FROM tasks t WHERE  t.private = 0 ";
         db.get(sqlNumOfTasks, [], (err, size) => {
@@ -129,7 +129,7 @@ exports.getPublicTasksTotal = function() {
  * - the requested task
  * 
  **/
-exports.getSingleTask = function(taskId,owner) {
+exports.getSingleTask = function (taskId, owner) {
     return new Promise((resolve, reject) => {
         const sql1 = "SELECT id as tid, description, important, private, project, deadline, completed, owner FROM tasks WHERE id = ?";
         db.all(sql1, [taskId], (err, rows) => {
@@ -137,17 +137,17 @@ exports.getSingleTask = function(taskId,owner) {
                 reject(err);
             else if (rows.length === 0)
                 reject(404);
-            else if (rows[0].owner == owner){
+            else if (rows[0].owner == owner) {
                 var task = createTask(rows[0]);
                 resolve(task);
             }
-            else{
+            else {
                 const sql2 = "SELECT t.id as total FROM tasks as t, assignments as a WHERE t.id = a.task AND t.id = ? AND a.user = ? ";
                 db.all(sql2, [taskId, owner], (err, rows2) => {
-                    if(rows2.length === 0){
+                    if (rows2.length === 0) {
                         reject(403);
                     }
-                    else{
+                    else {
                         var task = createTask(rows[0]);
                         resolve(task);
                     }
@@ -167,9 +167,9 @@ exports.getSingleTask = function(taskId,owner) {
  * - the list of owned tasks
  * 
  **/
- exports.getOwnedTasks = function(req) {
+exports.getOwnedTasks = function (req) {
     return new Promise((resolve, reject) => {
-        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed FROM tasks as t WHERE t.owner = ?";
+        var sql = "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed FROM tasks as t WHERE t.owner = ?";
         var limits = getPagination(req);
         if (limits.length != 0) sql = sql + " LIMIT ?,?";
         limits.unshift(req.user);
@@ -179,6 +179,7 @@ exports.getSingleTask = function(taskId,owner) {
                 reject(err);
             } else {
                 let tasks = rows.map((row) => createTask(row));
+                // exports.getAssignmentsStatus().then(status => console.log("Done")).catch(err => console.log(err));
                 resolve(tasks);
             }
         });
@@ -196,9 +197,9 @@ exports.getSingleTask = function(taskId,owner) {
  * - the list of assigned tasks
  * 
  **/
-exports.getAssignedTasks = function(req) {
+exports.getAssignedTasks = function (req) {
     return new Promise((resolve, reject) => {
-        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed,a.active, u.id as uid, u.name, u.email FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ?";
+        var sql = "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed,a.active, u.id as uid, u.name, u.email FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ?";
         var limits = getPagination(req);
         if (limits.length != 0) sql = sql + " LIMIT ?,?";
         limits.unshift(req.user);
@@ -208,12 +209,42 @@ exports.getAssignedTasks = function(req) {
                 reject(err);
             } else {
                 let tasks = rows.map((row) => createTask(row));
+                console.log("Here getAssignedTasks")
+                // exports.getAssignmentsStatus().then(status => console.log("Done"))
+                //     .catch(err => console.log(err));
                 resolve(tasks);
             }
         });
     });
 }
 
+
+exports.getAssignmentsStatus = function () {
+    return new Promise((resolve, reject) => {
+        var sql = "SELECT task, user, active, u.name FROM assignments a, users u WHERE a.user = u.id";
+        db.all(sql, (err, rows) => {
+            if (err) {
+                console.log("Errore:" + err);
+                reject(err);
+            } else {
+                var tasksIds = [];
+                rows.forEach(a => {
+                    if (!tasksIds.includes(a.task)) {
+                        tasksIds.push(a.task);
+                        var message = "";
+                        if (a.active === 1)
+                            message = new MQTTMessage('active', a.user, a.name);
+                        else
+                            message = new MQTTMessage('inactive');
+                        serverMqtt.publish(String(a.task), JSON.stringify(message), { qos: 0, retain: true });
+                    }
+                })
+
+                resolve(tasksIds);
+            }
+        })
+    })
+}
 
 /**
  * Retrieve the number of owned tasks
@@ -224,7 +255,7 @@ exports.getAssignedTasks = function(req) {
  * - total number of owned tasks
  * 
  **/
-exports.getOwnedTasksTotal = function(req) {
+exports.getOwnedTasksTotal = function (req) {
     return new Promise((resolve, reject) => {
         var sqlNumOfTasks = "SELECT count(*) total FROM tasks as t WHERE t.owner = ?";
         db.get(sqlNumOfTasks, req.user, (err, size) => {
@@ -246,7 +277,7 @@ exports.getOwnedTasksTotal = function(req) {
  * - total number of assigned tasks
  * 
  **/
-exports.getAssignedTasksTotal = function(req) {
+exports.getAssignedTasksTotal = function (req) {
     return new Promise((resolve, reject) => {
         var sqlNumOfTasks = "SELECT count(*) total FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ?";
         db.get(sqlNumOfTasks, req.user, (err, size) => {
@@ -271,7 +302,7 @@ exports.getAssignedTasksTotal = function(req) {
  * - no response expected for this operation
  * 
  **/
-exports.updateSingleTask = function(task, taskId, owner) {
+exports.updateSingleTask = function (task, taskId, owner) {
     return new Promise((resolve, reject) => {
 
         const sql1 = "SELECT owner FROM tasks t WHERE t.id = ?";
@@ -280,7 +311,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
                 reject(err);
             else if (rows.length === 0)
                 reject(404);
-            else if(owner != rows[0].owner) {
+            else if (owner != rows[0].owner) {
                 reject(403);
             }
             else {
@@ -291,26 +322,26 @@ exports.updateSingleTask = function(task, taskId, owner) {
                     else {
                         var sql3 = 'UPDATE tasks SET description = ?';
                         var parameters = [task.description];
-                        if(task.important != undefined){
+                        if (task.important != undefined) {
                             sql3 = sql3.concat(', important = ?');
                             parameters.push(task.important);
-                        } 
-                        if(task.private != undefined){
+                        }
+                        if (task.private != undefined) {
                             sql3 = sql3.concat(', private = ?');
                             parameters.push(task.private);
-                        } 
-                        if(task.project != undefined){
+                        }
+                        if (task.project != undefined) {
                             sql3 = sql3.concat(', project = ?');
                             parameters.push(task.project);
-                        } 
-                        if(task.deadline != undefined){
+                        }
+                        if (task.deadline != undefined) {
                             sql3 = sql3.concat(', deadline = ?');
                             parameters.push(task.deadline);
-                        } 
+                        }
                         sql3 = sql3.concat(' WHERE id = ?');
                         parameters.push(task.id);
 
-                        db.run(sql3, parameters, function(err) {
+                        db.run(sql3, parameters, function (err) {
                             if (err) {
                                 reject(err);
                             } else {
@@ -336,7 +367,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
  * - no response expected for this operation
  * 
  **/
- exports.completeTask = function(taskId, assignee) {
+exports.completeTask = function (taskId, assignee) {
     return new Promise((resolve, reject) => {
         const sql1 = "SELECT * FROM tasks t WHERE t.id = ?";
         db.all(sql1, [taskId], (err, rows) => {
@@ -353,7 +384,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
                         reject(403);
                     else {
                         const sql3 = 'UPDATE tasks SET completed = 1 WHERE id = ?';
-                        db.run(sql3, [taskId], function(err) {
+                        db.run(sql3, [taskId], function (err) {
                             if (err) {
                                 reject(err);
                             } else {
@@ -362,8 +393,8 @@ exports.updateSingleTask = function(task, taskId, owner) {
                         })
                     }
                 })
-            } 
-            
+            }
+
         });
     });
 }
@@ -373,7 +404,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
 /**
  * Utility functions
  */
-const getPagination = function(req) {
+const getPagination = function (req) {
     var pageNo = parseInt(req.query.pageNo);
     var size = constants.OFFSET;
     var limits = [];
@@ -385,7 +416,7 @@ const getPagination = function(req) {
     return limits;
 }
 
-const createTask = function(row) {
+const createTask = function (row) {
     const importantTask = (row.important === 1) ? true : false;
     const privateTask = (row.private === 1) ? true : false;
     const completedTask = (row.completed === 1) ? true : false;
