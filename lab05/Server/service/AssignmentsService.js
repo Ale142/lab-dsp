@@ -7,6 +7,7 @@ var WSMessage = require('../components/ws_message.js');
 var WebSocket = require('../components/websocket');
 var serverMqtt = require('../components/mqtt.js')
 var MQTTMessage = require('../components/mqtt_message.js');
+const server = require('../components/mqtt.js');
 /**
  * Assign a user to the task
  *
@@ -158,7 +159,7 @@ exports.assignBalanced = function (owner) {
  **/
 exports.selectTask = function selectTask(userId, taskId) {
     return new Promise((resolve, reject) => {
-
+        // TODO: send inactive message for deselected tasks
         db.serialize(function () {
 
             db.run('BEGIN TRANSACTION;');
@@ -184,41 +185,58 @@ exports.selectTask = function selectTask(userId, taskId) {
                             reject(new Error("Task already selected from another user"))
 
                         } else {
-                            const sql2 = 'SELECT u.name, t.description FROM assignments as a, users as u, tasks as t WHERE a.user = ? AND a.task = ? AND a.user = u.id AND a.task = t.id';
+                            const sql2 = 'SELECT u.name, t.description, a.task FROM assignments as a, users as u, tasks as t WHERE a.user = ? AND a.task = ? AND a.user = u.id AND a.task = t.id';
                             db.all(sql2, [userId, taskId], function (err, rows) {
                                 if (err) {
                                     db.run('ROLLBACK;')
                                     reject(err);
                                 } else {
-                                    const sql3 = 'UPDATE assignments SET active = 0 WHERE user = ?';
-                                    db.run(sql3, [userId], function (err) {
+
+                                    const sqlDeselectAllTask = "SELECT task FROM assignments WHERE user = ?";
+                                    db.all(sqlDeselectAllTask, [userId], (err, tasksAssigned) => {
                                         if (err) {
-                                            db.run('ROLLBACK;')
+                                            console.log("Error in deselection of task:", err);
+                                            db.run('ROLLBACK;');
                                             reject(err);
                                         } else {
-                                            const sql4 = 'UPDATE assignments SET active = 1 WHERE user = ? AND task = ?';
-                                            db.run(sql4, [userId, taskId], function (err) {
+                                            console.log("ROWS: ", tasksAssigned);
+
+                                            // Send inactive status for all task owned assigned from the user
+                                            tasksAssigned.forEach(r => server.publish(String(r.task), JSON.stringify(new MQTTMessage('inactive')), { qos: 0, retain: true }));
+                                            const sql3 = 'UPDATE assignments SET active = 0 WHERE user = ?';
+                                            db.run(sql3, [userId], function (err) {
                                                 if (err) {
                                                     db.run('ROLLBACK;')
                                                     reject(err);
-                                                } else if (this.changes == 0) {
-                                                    db.run('ROLLBACK;')
-                                                    reject(403);
                                                 } else {
-                                                    db.run('COMMIT TRANSACTION');
-                                                    //inform the clients that the user selected a different task where they are working on
-                                                    var updateMessage = new WSMessage('update', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description);
-                                                    WebSocket.sendAllClients(updateMessage);
-                                                    WebSocket.saveMessage(userId, new WSMessage('login', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description));
+                                                    const sql4 = 'UPDATE assignments SET active = 1 WHERE user = ? AND task = ?';
+                                                    db.run(sql4, [userId, taskId], function (err) {
+                                                        if (err) {
+                                                            db.run('ROLLBACK;')
+                                                            reject(err);
+                                                        } else if (this.changes == 0) {
+                                                            db.run('ROLLBACK;')
+                                                            reject(403);
+                                                        } else {
+                                                            db.run('COMMIT TRANSACTION');
+                                                            //inform the clients that the user selected a different task where they are working on
+                                                            var updateMessage = new WSMessage('update', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description);
+                                                            WebSocket.sendAllClients(updateMessage);
+                                                            WebSocket.saveMessage(userId, new WSMessage('login', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description));
 
-                                                    // Send to Broker that task has been updated
-                                                    serverMqtt.publish(String(taskId), JSON.stringify(new MQTTMessage('active', userId, rows[0].name)), { qos: 0, retain: true });
-                                                    resolve();
+                                                            // Send to Broker that task has been updated
+                                                            console.log("Rows[0].name", rows[0]);
+                                                            serverMqtt.publish(String(taskId), JSON.stringify(new MQTTMessage('active', userId, rows[0].name)), { qos: 0, retain: true });
+                                                            resolve();
 
+                                                        }
+                                                    })
                                                 }
                                             })
                                         }
                                     })
+
+
                                 }
 
                             })

@@ -22,6 +22,8 @@ exports.addTask = function (task, owner) {
                 reject(err);
             } else {
                 var createdTask = new Task(this.lastID, task.description, task.important, task.private, task.deadline, task.project, task.completed, task.active);
+                // When new task is created, send his status as 'inactive'
+                serverMqtt.publish(String(this.lastID), JSON.stringify(new MQTTMessage('inactive')), { qos: 0, retain: true });
                 resolve(createdTask);
             }
         });
@@ -59,8 +61,11 @@ exports.deleteTask = function (taskId, owner) {
                         db.run(sql3, [taskId], (err) => {
                             if (err)
                                 reject(err);
-                            else
+                            else {
+                                // When deleting task, send message about his status 
+                                serverMqtt.publish(String(taskId), JSON.stringify(new MQTTMessage('inactive')), { qos: 0, retain: true })
                                 resolve(null);
+                            }
                         })
                     }
                 })
@@ -179,7 +184,6 @@ exports.getOwnedTasks = function (req) {
                 reject(err);
             } else {
                 let tasks = rows.map((row) => createTask(row));
-                // exports.getAssignmentsStatus().then(status => console.log("Done")).catch(err => console.log(err));
                 resolve(tasks);
             }
         });
@@ -209,9 +213,6 @@ exports.getAssignedTasks = function (req) {
                 reject(err);
             } else {
                 let tasks = rows.map((row) => createTask(row));
-                console.log("Here getAssignedTasks")
-                // exports.getAssignmentsStatus().then(status => console.log("Done"))
-                //     .catch(err => console.log(err));
                 resolve(tasks);
             }
         });

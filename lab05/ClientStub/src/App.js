@@ -105,8 +105,14 @@ const Main = () => {
     })
 
     client.on('message', (topic, message, packet) => {
-      console.log("Received message: " + message.toString() + " from topic: " + topic);
-      displayTaskSelection(topic, JSON.parse(message));
+      try {
+        console.log("Received message: " + message.toString() + " from topic: " + topic);
+        displayTaskSelection(topic, JSON.parse(message.toString()));
+      } catch (err) {
+        console.log("Message that caused error: " + message.toString());
+        console.log(err);
+      }
+
     })
 
     client.on('close', () => {
@@ -164,6 +170,7 @@ const Main = () => {
     let objectStatus = { taskId: topic, userName: parsedMessage.userName, status: parsedMessage.status };
     var temp = assignedTaskList;
     index === -1 ? temp.push(objectStatus) : temp[index] = objectStatus;
+    console.log("Message arrived: " + JSON.stringify(parsedMessage) + " topic: " + topic + " TEMP:", temp);
     setAssignedTaskList(temp);
 
     setDirty(true);
@@ -302,7 +309,6 @@ const Main = () => {
   const selectTask = (task) => {
     API.selectTask(task)
       .then(() => {
-        client.publish(String(task.id), `Client ${clientId} selected task ${task.id}`, { qos: 0, retain: true })
         setDirty(true);
       })
       .catch(e => { alert('Task is already active for another user!'); handleErrors(e); })
@@ -327,14 +333,14 @@ const Main = () => {
   }, [activeFilter, dirty, loggedIn, user])
 
   useEffect(() => {
-    if (loggedIn && dirty) {
-      API.getAssignmentsStatus()
-        .then(response => {
-          setDirty(true);
-        })
-        .catch(e => handleErrors(e))
-    }
-  }, [loggedIn, dirty])
+
+    API.getAssignmentsStatus()
+      .then(response => {
+        setDirty(true);
+      })
+      .catch(e => handleErrors(e))
+
+  }, [])
 
   // show error message in toast
   const handleErrors = (err) => {
@@ -361,7 +367,11 @@ const Main = () => {
       // otherwise it is a new task to add
     } else {
       API.addTask(task)
-        .then(() => setDirty(true))
+        .then(() => {
+          // When new task is created, subscribe to it.
+          client.subscribe(String(task.id), { qos: 0, retain: true })
+          setDirty(true)
+        })
         .catch(e => handleErrors(e));
     }
     setSelectedTask(MODAL.CLOSED);
