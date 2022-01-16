@@ -1,0 +1,4 @@
+.swagger-codegen/
+node_modules/
+package-lock.json
+.swagger-codegen-ignore

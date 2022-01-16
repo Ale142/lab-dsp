@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "conversion";
+option java_outer_classname = "ConversionProto";
+package conversion;
+
+service ImageConverter {
+    rpc Convert (stream ConversionRequest) returns (stream ConversionResponse);
+}
+
+message MetadataRequest {
+    string sourceFileType = 1;
+    string destFileType = 2;
+}
+
+message ConversionRequest {
+    oneof request_oneof {
+        MetadataRequest metadata = 1;
+        bytes file = 2;
+    }
+}
+message MetadataResponse {
+    bool success = 1;
+    string error = 2;
+}
+
+message ConversionResponse {
+    oneof response_oneof {
+        MetadataResponse metadata = 1;
+        bytes file = 2;
+    }
+}
